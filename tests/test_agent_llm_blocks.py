@@ -1,16 +1,14 @@
-"""Тесты блоков консоли итерации: LLM, Reasoning, tool-вызовы."""
+"""Тесты блока ответа LLM и вывода reasoning."""
 
 
 import json
 import unittest
-from unittest import mock
 
-from tests.agent_common import agent, agent_console, agent_loop
 from tests.test_agent_iteration_logging import _IterationLoggingBase
 
 
 class LlmBlockTests(_IterationLoggingBase):
-    """Блоки ответа LLM: тайминг, токены, reasoning, tool-вызовы и результаты."""
+    """Тайминг, токены и reasoning ответа LLM."""
 
     def test_llm_block_contains_timing_tokens_and_full_content(self):
         long_content = "Текст ассистента: " + "A" * 300
@@ -79,26 +77,22 @@ class LlmBlockTests(_IterationLoggingBase):
         self.assertIn("│ осмотрелся и решил проверить память", logs[3])
         self.assertIn("💬 LLM", logs[4])
 
-    def test_reasoning_logged_when_serialize_returns_none(self):
-        """Пустой ответ (ни content, ни tool_calls) + thinking → блок 🧠 в логе.
-
-        Регрессия к «пустым» итерациям: раньше было непонятно, что модель
-        думала, но ничего не выдала.
-        """
+    def test_reasoning_only_response_is_logged_and_saved(self):
+        """Reasoning-only ответ сохраняется и становится историей тика."""
         response = {
             "role": "assistant",
             "content": None,
             "reasoning_content": "думал, но ничего не решил",
         }
-        logs_sink = []
-        with mock.patch.object(agent_loop, "_log", logs_sink.append), \
-             mock.patch.object(agent_console, "USE_COLOR", False), \
-             mock.patch.object(agent_loop, "call_llm", return_value=response):
-            with self.assertRaises(RuntimeError):
-                agent._run_iteration(self.paths, self.cfg, client=object())
-        reasoning_blocks = [b for b in logs_sink if "🧠 Reasoning" in b]
+        logs = self._run(response)
+        reasoning_blocks = [b for b in logs if "🧠 Reasoning" in b]
         self.assertEqual(len(reasoning_blocks), 1)
         self.assertIn("думал, но ничего не решил", reasoning_blocks[0])
+        record = json.loads(self.paths.mind_loop.read_text(encoding="utf-8"))
+        self.assertEqual(
+            record["iterations"][0]["assistant_message"]["reasoning_content"],
+            "думал, но ничего не решил",
+        )
 
     def test_multiline_content_each_line_framed(self):
         content = "Строка 1\n\nСтрока 3"
@@ -120,48 +114,6 @@ class LlmBlockTests(_IterationLoggingBase):
         logs = self._run(response, tool_result="память")
         self.assertIn("(без текста)", logs[3])
 
-    def test_tool_blocks_not_truncated(self):
-        long_arg = json.dumps({"command": "echo " + "B" * 300})
-        long_result = "Результат:\n" + "C" * 300
-        response = {
-            "role": "assistant",
-            "content": None,
-            "tool_calls": [{
-                "id": "c1", "type": "function",
-                "function": {"name": "run_bash", "arguments": long_arg},
-            }],
-        }
-        logs = self._run(response, tool_result=long_result)
-        # Лог 0: заголовок итерации, 1: команда, 2: system prompt, 3: блок LLM,
-        # 4: вызов tool, 5: результат
-        self.assertEqual(len(logs), 6)
-
-        call_block = logs[4]
-        self.assertIn("Tool: run_bash [вызов]", call_block)
-        self.assertIn("┏━━", call_block)
-        self.assertIn("┗", call_block)
-        self.assertIn("B" * 300, call_block)  # аргументы полностью
-        self.assertNotIn("…", call_block)
-
-        result_block = logs[5]
-        self.assertIn("Tool: run_bash [результат]", result_block)
-        self.assertIn("╔══", result_block)
-        self.assertIn("╚", result_block)
-        self.assertIn(long_result.replace("\n", "\n║ "), result_block)
-        self.assertNotIn("…", result_block)
-
-    def test_no_ansi_codes_when_color_disabled(self):
-        response = {
-            "role": "assistant",
-            "content": None,
-            "tool_calls": [{
-                "id": "c1", "type": "function",
-                "function": {"name": "get_memory", "arguments": "{}"},
-            }],
-        }
-        logs = self._run(response, tool_result="ок")
-        for block in logs:
-            self.assertNotIn("\x1b[", block)
 
 if __name__ == "__main__":
     unittest.main()

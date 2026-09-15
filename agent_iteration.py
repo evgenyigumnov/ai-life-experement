@@ -77,7 +77,9 @@ def run_iteration(paths: AgentPaths, cfg: Config, client,
     if reasoning:
         log(_format_reasoning_block(number, reasoning))
     if assistant is None:
-        raise RuntimeError("пустой ответ модели: нет ни content, ни tool_calls")
+        raise RuntimeError(
+            "пустой ответ модели: нет content, tool_calls и reasoning"
+        )
     record = {
         "n": number, "timestamp": now_iso(), "user": user_message,
         "assistant_message": assistant, "tool_results": [],

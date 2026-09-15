@@ -65,8 +65,8 @@ class RunLoopHistoryTests(RunLoopTestCase):
         self.assertIn("[сбой итерации:", messages[1]["content"])
 
     def test_empty_string_response_recorded_as_error_iteration(self):
-        # регрессия итерации №5 из лога: content="" (только reasoning)
-        # раньше записывался как валидная пустая итерация
+        # Пустой content без reasoning остаётся ошибкой, а не валидной
+        # пустой итерацией.
         empty_string = {"role": "assistant", "content": "", "tool_calls": None}
         with mock.patch.object(agent_loop, "make_client", lambda cfg: object()), \
              mock.patch.object(agent_loop, "call_llm", self._script_llm([empty_string])):

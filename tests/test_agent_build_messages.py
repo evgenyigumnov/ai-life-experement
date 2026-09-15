@@ -97,7 +97,7 @@ class BuildMessagesTests(unittest.TestCase):
         self.assertEqual([m["content"] for m in assistant], ["валидная"])
 
     def test_empty_string_content_record_skipped(self):
-        # историческая итерация с content="" (только reasoning) не воспроизводится
+        # историческая итерация с пустым content без reasoning не воспроизводится
         record = {
             "n": 1,
             "assistant_message": {"role": "assistant", "content": ""},

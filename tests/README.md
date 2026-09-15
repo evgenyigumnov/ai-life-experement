@@ -49,7 +49,9 @@
 | `test_agent_prompt_cache` | кэшируемость системного промпта: system побайтово идентичен файлу и неизменен между итерациями, append-only префикс, отправленные сообщения не мутируются, заметки сна/пробуждения не трогают префикс |
 | `test_agent_prompt_cache_restart` | кеш промпта: холодный перезапуск процесса воспроизводит следующий запрос побайтово; кеш показа промпта в консоли (console_state) |
 | `test_agent_iteration_logging` | консоль итерации: заголовок, команда LLM с обратным отсчётом до сна, блок system prompt (полный / «без изменений» / перечитывание с диска) |
-| `test_agent_llm_blocks` | блоки консоли: LLM (тайминг, токены послано/сгенерировано/reasoning), Reasoning, tool-вызовы и результаты без обрезки, отсутствие ANSI-кодов без цвета |
+| `test_agent_llm_blocks` | блоки консоли: LLM (тайминг, токены послано/сгенерировано/reasoning), Reasoning и сохранение reasoning-only ответов |
+| `test_agent_tool_blocks` | блоки вызова/результата tool без обрезки и ANSI-кодов |
+| `test_agent_reasoning_history` | путь reasoning: ответ → mind-loop.json → следующий payload, оба имени поля и SDK-атрибут |
 | `test_agent_usage_extract` | извлечение usage из SDK-объектов и dict: prompt/completion/reasoning токены; `_extract_reasoning` (reasoning_content/reasoning, обёртка _MessageWithUsage, пустые) |
 | `test_agent_console_format` | цвета (USE_COLOR/NO_COLOR/TERM/tty) и форматирование: tool-args, блоки reasoning/system-prompt/«без изменений» |
 | `tools_testkit` | общие фикстуры модулей test_tools_* (не тесты): хелперы `_paths`/`_bash`, контекст `bash_tool_on` |
