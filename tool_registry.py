@@ -32,11 +32,13 @@ from tools_search import (
 from tools_web_fetch import WEB_FETCH_TOOL, handle_web_fetch
 from tools_money import handle_money_balance, handle_money_spend
 from tools_money_schema import MONEY_BALANCE_TOOL, MONEY_SPEND_TOOL
+from tool_catalog import DYNAMIC_HANDLERS, DYNAMIC_NAMES, DYNAMIC_SCHEMAS
 
 
 TOOLS_SCHEMA = [
     RUN_BASH_TOOL,
     READ_FILE_TOOL,
+    *DYNAMIC_SCHEMAS,
     SEND_MESSAGE_TOOL,
     GET_MESSAGES_TOOL,
     GET_MEMORY_TOOL,
@@ -53,7 +55,7 @@ TOOLS_SCHEMA = [
     MONEY_SPEND_TOOL,
 ]
 
-SANDBOX_TOOLS = ("run_bash", "read_file")
+SANDBOX_TOOLS = ("run_bash", "read_file", *DYNAMIC_NAMES)
 PATHLESS_TOOLS = (
     *SANDBOX_TOOLS, "internet_search", "web_fetch", "inspect_image", "sleep"
 )
@@ -75,6 +77,7 @@ _HANDLERS = {
     "inspect_image": handle_inspect_image,
     "money_balance": handle_money_balance,
     "money_spend": handle_money_spend,
+    **DYNAMIC_HANDLERS,
 }
 
 

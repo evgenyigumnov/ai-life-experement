@@ -86,13 +86,18 @@ class ArgumentsAndSchemaTests(unittest.TestCase):
         self.assertIn("...output truncated (137 chars)...", cut)
 
     def test_schema_structure(self):
-        self.assertEqual(len(tools.TOOLS_SCHEMA), 16)
+        self.assertEqual(len(tools.TOOLS_SCHEMA), 21)
         names = [t["function"]["name"] for t in tools.TOOLS_SCHEMA]
         self.assertEqual(
             names,
             [
                 "run_bash",
                 "read_file",
+                "write",
+                "edit",
+                "grep",
+                "find",
+                "ls",
                 "send_message",
                 "get_messages",
                 "get_memory",
@@ -119,6 +124,14 @@ class ArgumentsAndSchemaTests(unittest.TestCase):
             if tool["function"]["name"] == "get_messages"
         )
         self.assertNotIn("force", get_messages["function"]["parameters"]["properties"])
+
+    def test_file_tools_are_loaded_from_tools_catalog(self):
+        from tools import discover_tools
+
+        discovered = [definition["function"]["name"] for definition, _ in discover_tools()]
+        self.assertEqual(discovered, ["write", "edit", "grep", "find", "ls"])
+        for name in discovered:
+            self.assertIn(name, tools._HANDLERS)
 
     def test_build_tools_schema_full_and_filtered(self):
         # полный список — с песочницей; выключенный — без обоих её инструментов

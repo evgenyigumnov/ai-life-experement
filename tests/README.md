@@ -69,7 +69,7 @@
 | `test_tools_web_fetch` | web_fetch: прямая загрузка без Brave, HTML-текст, ссылки и постраничное чтение |
 | `test_tools_vision` / `test_vision_source` / `test_vision_image` | inspect_image: валидация, Docker/URL-источник, JPEG-нормализация и очистка reasoning |
 | `test_vision_live` | два smoke-вызова inspect_image (URL и Docker path) через реальный LLM; skip без доступной инфраструктуры |
-| `test_tools_schema` | схемы: структура (16 инструментов), гейтинг internet_search/песочницы, web_fetch без ключа, описание money-расписания, сериализуемость, unknown tools и разбор аргументов |
+| `test_tools_schema` / `test_tools_file_common` / `test_tools_file_tools` | схемы 21 инструмента, автоматическая регистрация файловых tools, гейтинг песочницы, общие лимиты, очередь мутаций и интеграционные write/edit/grep/find/ls |
 | `test_main` / `test_main_money` | точка входа: обычные аргументы, баннер, Docker и run_loop; pay/balance/history с обязательным существующим агентом без LLM-конфигурации, unread-сообщение и история трат |
 | `test_dockerfile` | Dockerfile песочницы: установлен vim, vi — симлинк на vim, задана UTF-8 локаль |
 
