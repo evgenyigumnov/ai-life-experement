@@ -123,9 +123,15 @@ REASONING_EFFORT=max
   символов); время ставится автоматически, возвращается id записи.
   kind: `event` (событие/диалог), `lesson` (урок/ошибка), `value` (вкус,
   принцип), `idea` (зародившаяся мысль), `note` (по умолчанию);
-- `diary_recall(query, tags, kinds, limit=20, order="new")` — поиск/чтение:
-  подстрока в тексте, все перечисленные теги, типы записей; без параметров —
-  последние записи; каждая запись в ответе: id, время, kind, tags, text;
+- `diary_recall(query, tags, kinds, limit=20, order="new", mode="hybrid")` —
+  поиск/чтение: FTS5 ищет по словам, `hybrid` добавляет смысловой поиск;
+  `text` оставляет только поиск по словам, `vector` — только смысловой.
+  В `hybrid`/`vector` результаты идут по релевантности, а `text` и запрос без
+  `query` сохраняют прежний порядок `order`. Все фильтры и курсоры сохраняются;
+  каждая запись в ответе: id, время, kind, tags, text. Без токена
+  `DIARY_EMBED_TOKEN` или расширения `vec0.so` hybrid автоматически использует FTS5.
+  Индексы строятся и обновляются автоматически рядом с `diary.json`; вручную
+  запускать `reindex_*` не требуется;
 - `diary_edit(id, text)` — правка одной записи без касания остальных;
 - `diary_tags(limit=10, min_count=1, kinds)` — оглавление тем: частоты тегов
   за один вызов (сортировка по числу записей, при равенстве — по алфавиту).
@@ -136,6 +142,33 @@ REASONING_EFFORT=max
 
 Дневник переживает «сон» между сессиями (mind-loop.json архивируется,
 а diary.json — нет) и создаётся пустым при первом запуске агента.
+
+### sqlite-vec (необязательная часть)
+
+FTS5 работает без дополнительных пакетов. Для смыслового поиска нужен
+`vec0.so`; приложение ищет его рядом с `diary.json`, в корне проекта или по
+`DIARY_VEC_SO`. В Ubuntu/Debian отдельного apt-пакета sqlite-vec нет:
+для сборки из исходников нужны `build-essential` и `libsqlite3-dev`
+(список зафиксирован в `apt-packages.txt`).
+Можно взять проверенное готовое расширение `sqlite-vec==0.1.9`:
+
+```bash
+sudo apt-get install build-essential libsqlite3-dev
+python -m pip install -r requirements-vector.txt
+python - <<'PY'
+import shutil
+from pathlib import Path
+import sqlite_vec
+source = Path(sqlite_vec.loadable_path())
+if not source.exists():
+    source = Path(str(source) + ".so")
+shutil.copyfile(source, "vec0.so")
+PY
+```
+
+`vec0.so` намеренно игнорируется Git и должен устанавливаться отдельно на
+каждом хосте. Без него и/или без `DIARY_EMBED_TOKEN` hybrid автоматически
+деградирует до FTS5.
 
 ## Адаптивная пауза цикла
 

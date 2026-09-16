@@ -7,7 +7,7 @@
 
 from pathlib import Path
 
-from diary_query import recall, recall_page
+from diary_query import recall, recall_page, recall_page_by_ids
 from diary_storage import empty_diary, ensure_diary_file, load_diary, save_diary
 from diary_validation import (
     DEFAULT_KIND,
@@ -73,6 +73,7 @@ def remember(path: Path, text, tags=None, kind=DEFAULT_KIND) -> dict:
     data.setdefault("entries", []).append(entry)
     data["next_id"] = entry_id + 1
     save_diary(path, data)
+    _after_write(path, entry)
     return entry
 
 
@@ -94,4 +95,15 @@ def edit_entry(path: Path, entry_id, text) -> dict:
     entry["edited_at"] = now_iso()
     entry["edit_count"] = int(entry.get("edit_count") or 0) + 1
     save_diary(path, data)
+    _after_write(path, entry)
     return entry
+
+
+def _after_write(path: Path, entry: dict) -> None:
+    """Обновить поисковые индексы после записи; сбой индекса не ломает дневник."""
+    try:
+        import diary_index
+
+        diary_index.update_entry(path, entry)
+    except Exception:
+        pass

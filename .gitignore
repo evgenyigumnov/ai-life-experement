@@ -7,3 +7,9 @@ agents/*/
 rootfs/
 sources/
 .env
+
+# индексы поиска по дневнику
+*.search.db
+*.vec.db
+*.index-meta.json
+vec0.so

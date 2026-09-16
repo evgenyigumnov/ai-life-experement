@@ -1,28 +1,10 @@
-"""Исполнители diary-инструментов: дневник (diary.json) — долгая память.
-
-Исполнители тонкие: валидация и хранение — в модуле diary, здесь —
-форматирование ответов и перевод ошибок в «Error: ...». Схемы — в
-`tools_diary_schema.py`.
-"""
+"""Исполнители diary-инструментов: запись, редактирование и теги."""
 
 import diary
 from agent_text import _plural_entries
 from agent_paths import AgentPaths
 from diary_tags import count_tags, tags_stats, validate_min_count
-
-
-def _format_entry(entry: dict) -> str:
-    """Запись дневника для ответа tool: шапка (id/время/kind/теги) + текст."""
-    header = (
-        f"[id={entry.get('id')}] {entry.get('timestamp', '')} "
-        f"{entry.get('kind', diary.DEFAULT_KIND)}"
-    )
-    tags = entry.get("tags") or []
-    if tags:
-        header += " " + " ".join(f"#{tag}" for tag in tags)
-    if entry.get("edit_count"):
-        header += " (изменена)"
-    return f"{header}\n{entry.get('text', '')}"
+from tools_diary_recall import handle_diary_recall
 
 
 def handle_diary_remember(args: dict, paths: AgentPaths) -> str:
@@ -40,42 +22,6 @@ def handle_diary_remember(args: dict, paths: AgentPaths) -> str:
     if entry.get("tags"):
         details.append(f"tags: {', '.join(entry['tags'])}")
     return f"Записано в дневник: id={entry['id']} ({'; '.join(details)})"
-
-
-def handle_diary_recall(args: dict, paths: AgentPaths) -> str:
-    """diary_recall: найти записи дневника по фильтрам (с пагинацией)."""
-    try:
-        data = diary.load_diary(paths.diary)
-        order = args.get("order") or "new"
-        entries, next_cursor = diary.recall_page(
-            data,
-            query=args.get("query"),
-            tags=args.get("tags"),
-            kinds=args.get("kinds"),
-            limit=(
-                diary.DEFAULT_RECALL_LIMIT
-                if args.get("limit") is None
-                else args.get("limit")
-            ),
-            order=order,
-            after_id=args.get("after_id"),
-            before_id=args.get("before_id"),
-        )
-    except diary.ValidationError as exc:
-        return f"Error: invalid arguments: {exc}"
-    total = diary.live_entries_count(data)
-    if not entries:
-        return f"(в дневнике нет записей по этому фильтру; всего записей: {total})"
-    header = f"Дневник: показано {len(entries)} записей (всего: {total}):"
-    blocks = [_format_entry(entry) for entry in entries]
-    parts = [header + "\n" + "\n---\n".join(blocks)]
-    if next_cursor is not None:
-        cursor_param = "before_id" if order == "new" else "after_id"
-        parts.append(
-            f"(есть ещё записи по фильтру: следующая страница — "
-            f"diary_recall({cursor_param}={next_cursor}))"
-        )
-    return "\n".join(parts)
 
 
 def handle_diary_edit(args: dict, paths: AgentPaths) -> str:

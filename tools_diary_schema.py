@@ -5,6 +5,7 @@
 """
 
 import diary
+from diary_index import MODES as SEARCH_MODES
 from diary_tags import DEFAULT_TAGS_LIMIT, MAX_TAGS_LIMIT
 
 REMEMBER_TOOL = {
@@ -43,15 +44,23 @@ RECALL_TOOL = {
     "function": {
         "name": "diary_recall",
         "description": (
-            "Найти записи в дневнике: подстрока, теги, типы; "
-            "без параметров — последние записи; длинная выдача листается курсором"
+            "Найти записи в дневнике: поиск по словам и смыслу, теги, типы; "
+            "без параметров — последние записи; листается курсором"
         ),
         "parameters": {
             "type": "object",
             "properties": {
                 "query": {
                     "type": "string",
-                    "description": "Подстрока для поиска в тексте записи",
+                    "description": "Текст запроса: слова или фраза (ищется по словам и по смыслу)",
+                },
+                "mode": {
+                    "type": "string",
+                    "enum": list(SEARCH_MODES),
+                    "description": (
+                        "Режим поиска: hybrid — слова + смысл (по умолчанию), "
+                        "text — только слова (FTS5), vector — только смысл"
+                    ),
                 },
                 "tags": {
                     "type": "array",
