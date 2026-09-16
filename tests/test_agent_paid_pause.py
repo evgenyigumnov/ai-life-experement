@@ -25,9 +25,11 @@ class PaidPauseTests(unittest.TestCase):
         wallet.spend(self.paths.wallet, 3, "ускорить работу")
         logs, sleeps = _run_loop_mocked(
             self.paths, self.cfg,
-            [{"role": "assistant", "content": str(i)} for i in range(4)],
+            [{"role": "assistant", "content": str(i)} for i in range(6)],
         )
-        self.assertEqual(sleeps, [0.0, 0.0, 0.0, 120.0])
+        # После последнего speed-цикла счётчик сброшен: 1-я обычная
+        # итерация идёт сразу, затем расписание снова растёт.
+        self.assertEqual(sleeps, [0.0, 0.0, 0.0, 0.0, 30.0, 60.0])
         self.assertEqual(wallet.wallet_summary(self.paths.wallet)["acceleration_cycles"], 0)
         data = json.loads(self.paths.wallet.read_text(encoding="utf-8"))
         self.assertEqual([tx["type"] for tx in data["transactions"]], ["credit", "spend"])
@@ -49,7 +51,7 @@ class PaidPauseTests(unittest.TestCase):
             self.paths, self.cfg,
             [tool_response, {"role": "assistant", "content": "готово"}],
         )
-        self.assertEqual(sleeps, [0.0, 30.0])
+        self.assertEqual(sleeps, [0.0, 0.0])
         data = json.loads(self.paths.mind_loop.read_text(encoding="utf-8"))
         self.assertEqual(len(data["iterations"]), 2)
 

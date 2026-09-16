@@ -89,6 +89,10 @@ def run_loop(paths: AgentPaths, cfg: Config) -> None:
                 backoff_step, sleep_for, creator_wrote, delay,
                 iteration_duration, fixed_pause=cfg.loop_pause is not None,
             ))
+            if paid_remaining == 0:
+                # После последнего оплаченного цикла начинаем адаптивное
+                # расписание заново, а не прыгаем на старую ступень.
+                backoff_step = 0
             if _wait_pause(sleep_for, paths, last_creator_count):
                 last_creator_count = _creator_messages_count(paths)
                 backoff_step = 0
