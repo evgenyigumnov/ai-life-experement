@@ -63,7 +63,9 @@ def read_reply(session, prompt: str) -> str | None:
 def reply_output(enabled: bool):
     """Безопасно печатать ответы агента поверх активного редактора."""
     if enabled and patch_stdout is not None:
-        with patch_stdout():
+        # Default ``patch_stdout`` treats ANSI sequences as text and replaces
+        # ESC with ``?``. Keep colors intact for messages printed above prompt.
+        with patch_stdout(raw=True):
             yield
     else:
         yield

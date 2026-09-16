@@ -31,6 +31,13 @@ class ReplyInputTests(unittest.TestCase):
         self.assertIn(("escape", "[", "1", "3", ";", "2", "u"), sequences)
         self.assertIn(("escape", "[", "1", "3", ";", "5", "u"), sequences)
 
+    def test_reply_output_preserves_ansi_sequences(self):
+        with mock.patch.object(reply_input, "patch_stdout") as patch_stdout:
+            with reply_input.reply_output(True):
+                pass
+
+        patch_stdout.assert_called_once_with(raw=True)
+
     def test_read_reply_returns_none_on_eof(self):
         with mock.patch("builtins.input", side_effect=EOFError):
             self.assertIsNone(reply_input.read_reply(None, "> "))
