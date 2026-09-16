@@ -47,7 +47,13 @@ def recall_v2(diary_path, query, k=5, mode="hybrid") -> list[dict]:
     text_norm = _normalize([item["score"] for item in text_hits])
     vector_norm = _normalize([item["score"] for item in vector_hits])
     merged: dict[int, dict] = {}
+    text_ids = {hit["id"] for hit in text_hits}
     for hit, norm in zip(vector_hits, vector_norm):
+        # При маленьком дневнике KNN возвращает и слабые хвостовые записи.
+        # Нулевой vector-only хвост не должен превращать точный hybrid-запрос
+        # в выдачу всего дневника; если текста нет, сохраняем весь top-k.
+        if text_ids and hit["id"] not in text_ids and norm <= 1e-9:
+            continue
         merged[hit["id"]] = {
             "id": hit["id"],
             "score": W_VECTOR * norm,

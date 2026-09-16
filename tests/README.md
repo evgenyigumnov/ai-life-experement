@@ -27,6 +27,7 @@
 | `test_storage` / `test_storage_messages` | mind-loop.json: загрузка/сохранение/добавление итераций, архивы и бэкапы; memory.md; системный промпт; messages.json, read-флаги и конкурентная запись переписки |
 | `test_wallet` | wallet.json: ledger credit/spend, баланс, оплаченные циклы, потребление без boost_consume, повреждение, атомарность и конкурентная запись |
 | `test_diary` / `test_diary_pagination` / `test_diary_edit` | diary.json: загрузка/бэкапы, remember/recall с фильтрами и курсорами, точечная правка и валидация |
+| `test_diary_index` / `test_diary_search` / `test_diary_vec` | автоиндексация, FTS5, sqlite-vec, fallback и свежесть индексов |
 | `test_message_format` / `test_time_utils` | общие форматирование сообщений и ISO-время |
 | `test_llm` / `test_llm_support` | ретраи call_llm (429/сеть/5xx, backoff 2-4-8-16, пауза 60 и новый цикл), постоянные ошибки (400), пустой ответ, Ctrl+C во время паузы, usage без мутации SDK-сообщения (регрессия MockValSer), make_client |
 | `test_llm_live` | живой smoke-тест: минимальный запрос на сервер из .env (load_config → make_client → call_llm → сериализация для истории → prompt_tokens); при недоступном сервере skip, `AI_LIVE_REQUIRED=1` — обязательность провалом |
@@ -72,11 +73,13 @@
 | `test_main` / `test_main_money` | точка входа: обычные аргументы, баннер, Docker и run_loop; pay/balance/history с обязательным существующим агентом без LLM-конфигурации, unread-сообщение и история трат |
 | `test_dockerfile` | Dockerfile песочницы: установлен vim, vi — симлинк на vim, задана UTF-8 локаль |
 
-Живые vision smoke-тесты (URL и Docker path) запускаются отдельно:
+Живые smoke-тесты vision и эмбеддингов запускаются отдельно:
 
 ```bash
 .venv/bin/python -m unittest tests.test_vision_live -v
 AI_LIVE_REQUIRED=1 .venv/bin/python -m unittest tests.test_vision_live -v
+DIARY_EMBED_TOKEN=... DIARY_VEC_SO=/tmp/vec0.so \
+  .venv/bin/python -m unittest tests.test_diary_live -v
 ```
 
 ## Время выполнения

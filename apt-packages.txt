@@ -1,0 +1,4 @@
+# Optional sqlite-vec build dependencies for Ubuntu/Debian.
+# sqlite-vec itself is not provided by the standard apt repositories.
+build-essential
+libsqlite3-dev
