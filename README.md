@@ -72,21 +72,31 @@
 - `internet_search` — поиск свежей информации через Brave Search API; это
   отдельный legacy-tool, доступный только при непустом `BRAVE_KEY` в `.env`.
 
-Для проверки vision через реальный DeepInfra API используйте
+Для проверки vision через реальный OpenAI-compatible API используйте
 `.venv/bin/python -m unittest tests.test_vision_live -v`; без доступного API
 или Docker тест пропускается, а `AI_LIVE_REQUIRED=1` делает его обязательным.
 
-### Поддерживаемые модели DeepInfra
+### DeepSeek API и DeepSeek-V4.1-Flash
 
-В `OPENAI_MODEL` можно выбрать любую из двух проверенных моделей:
+Официальный API предоставляет V4.1-Flash под именем `deepseek-flash`. Для
+переключения в `.env` нужны такие значения:
 
-- `zai-org/GLM-5.3-Flash`;
-- `deepseek-ai/DeepSeek-V4.1-Flash`.
+```dotenv
+OPENAI_BASE_URL=https://api.deepseek.com
+OPENAI_MODEL=deepseek-flash
+OPENAI_API_KEY=ключ_DeepSeek
+# либо DEEPSEEK_API_KEY=ключ_DeepSeek
+REASONING_EFFORT=max
+```
 
-Обе работают через `https://api.deepinfra.com/v1/openai`, поддерживают tools и
-нативное изображение для `inspect_image`. Для общего конфига используйте
-`REASONING_EFFORT=max`; старый `xhigh` также не ломает переключение на
-DeepSeek, а для GLM автоматически приводится к `max`.
+`/v1` к `OPENAI_BASE_URL` добавлять не нужно. Ключ можно оставить в
+`OPENAI_API_KEY` или назвать `DEEPSEEK_API_KEY`. Модель поддерживает tools и
+нативное изображение для `inspect_image`: URL или путь из Docker превращается
+в JPEG Data URL и отправляется в пользовательском сообщении. Алиас
+`DeepSeek-V4.1-Flash` тоже нормализуется в `deepseek-flash`.
+
+Старый профиль DeepInfra (`https://api.deepinfra.com/v1/openai` и
+`deepseek-ai/DeepSeek-V4.1-Flash`) сохранён для совместимости.
 
 Кошелёк агента хранится отдельно в `wallet.json` и не входит в `mind-loop.json`:
 кредит создателя увеличивает доступный баланс, а `money_spend` уменьшает его и

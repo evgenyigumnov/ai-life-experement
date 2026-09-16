@@ -28,7 +28,7 @@
 | `test_wallet` | wallet.json: ledger credit/spend, баланс, оплаченные циклы, потребление без boost_consume, повреждение, атомарность и конкурентная запись |
 | `test_diary` / `test_diary_pagination` / `test_diary_edit` | diary.json: загрузка/бэкапы, remember/recall с фильтрами и курсорами, точечная правка и валидация |
 | `test_message_format` / `test_time_utils` | общие форматирование сообщений и ISO-время |
-| `test_llm` / `test_llm_support` / `test_model_support` | ретраи call_llm (429/сеть/5xx, backoff 2-4-8-16, пауза 60 и новый цикл), постоянные ошибки (400), пустой ответ, Ctrl+C во время паузы, usage без мутации SDK-сообщения (регрессия MockValSer), make_client; профили GLM-5.3-Flash и DeepSeek-V4.1-Flash |
+| `test_llm` / `test_llm_support` / `test_model_support` | ретраи call_llm (429/сеть/5xx, backoff 2-4-8-16, пауза 60 и новый цикл), постоянные ошибки (400), пустой ответ, Ctrl+C во время паузы, usage без мутации SDK-сообщения (регрессия MockValSer), make_client; профили GLM-5.3-Flash, DeepInfra и официального DeepSeek API |
 | `test_llm_live` | живой smoke-тест: минимальный запрос на сервер из .env (load_config → make_client → call_llm → сериализация для истории → prompt_tokens); при недоступном сервере skip, `AI_LIVE_REQUIRED=1` — обязательность провалом |
 | `test_agent_build_messages` | `build_messages`: воспроизведение истории (текст, tool-calls по id и по порядку, итерации-ошибки, нормализация SDK-словарей, пробельные/пустые content, отсутствие урезания истории, перечитывание system-prompt.md) |
 | `test_agent_message_files` | тексты сообщений из файлов папки агента: переопределения user/last-iteration/wake-up, sleep-warning с `{remaining}`+`{memory_note}`, repeat-alert, перечитывание при каждой сборке, пустой файл → дефолт |
@@ -68,7 +68,7 @@
 | `test_tools_search` / `test_tools_search_errors` | internet_search: схема, валидация, один HTTP-запрос, ошибки и форматирование результатов Brave |
 | `test_tools_web_fetch` | web_fetch: прямая загрузка без Brave, HTML-текст, ссылки и постраничное чтение |
 | `test_tools_vision` / `test_vision_source` / `test_vision_image` | inspect_image: валидация, Docker/URL-источник, JPEG-нормализация и очистка reasoning |
-| `test_vision_live` | два smoke-вызова inspect_image (URL и Docker path) через реальный LLM; skip без доступной инфраструктуры |
+| `test_vision_live` | два smoke-вызова inspect_image (URL и Docker path) через реальный LLM/API; skip без доступной инфраструктуры |
 | `test_tools_schema` / `test_tools_file_common` / `test_tools_file_tools` | схемы 21 инструмента, автоматическая регистрация файловых tools, гейтинг песочницы, общие лимиты, очередь мутаций и интеграционные write/edit/grep/find/ls |
 | `test_main` / `test_main_money` | точка входа: обычные аргументы, баннер, Docker и run_loop; pay/balance/history с обязательным существующим агентом без LLM-конфигурации, unread-сообщение и история трат |
 | `test_dockerfile` | Dockerfile песочницы: установлен vim, vi — симлинк на vim, задана UTF-8 локаль |

@@ -19,7 +19,17 @@ class LoadConfigTests(unittest.TestCase):
         self.assertIsNone(data["loop_pause"])
 
     def test_api_key_dummy_when_absent(self):
-        self.assertEqual(config_data(run_config(BASE, {"OPENAI_API_KEY": None}))["api_key"], "dummy")
+        self.assertEqual(
+            config_data(run_config(BASE, {
+                "OPENAI_API_KEY": None, "DEEPSEEK_API_KEY": None,
+            })) ["api_key"], "dummy"
+        )
+
+    def test_deepseek_api_key_alias(self):
+        data = config_data(run_config(
+            BASE + "DEEPSEEK_API_KEY=ds-key\n", {"OPENAI_API_KEY": None}
+        ))
+        self.assertEqual(data["api_key"], "ds-key")
 
     def test_api_key_from_env(self):
         data = config_data(run_config(BASE + "OPENAI_API_KEY=sk-real\n", {}))
@@ -28,7 +38,8 @@ class LoadConfigTests(unittest.TestCase):
     def test_defaults(self):
         result = run_config(BASE, {
             "OPENAI_BASE_URL": None, "OPENAI_MODEL": None,
-            "OPENAI_API_KEY": None, "LOOP_DELAY": None,
+            "OPENAI_API_KEY": None, "DEEPSEEK_API_KEY": None,
+            "LOOP_DELAY": None,
             "TEMPERATURE": None, "REASONING_EFFORT": None,
             "ENABLE_BASH_TOOL": None, "SESSION_ITERATIONS": None,
             "SLEEP_WARN_REMAINING": None,

@@ -14,7 +14,7 @@ from llm_retry import (
     is_retryable as _is_retryable,
     log as _log,
 )
-from model_support import normalize_reasoning_effort
+from model_support import normalize_model_name, request_options
 
 REQUEST_TIMEOUT = 600.0
 
@@ -47,11 +47,9 @@ def call_llm(
         for attempt in range(1, MAX_ATTEMPTS + 1):
             try:
                 kwargs = {"tools": tools} if tools else {}
-                effort = normalize_reasoning_effort(model, reasoning_effort)
-                if effort:
-                    kwargs["reasoning_effort"] = effort
+                kwargs.update(request_options(model, reasoning_effort))
                 response = client.chat.completions.create(
-                    model=model,
+                    model=normalize_model_name(model),
                     messages=messages,
                     temperature=temperature,
                     **kwargs,

@@ -14,7 +14,7 @@ from tests.helpers import PROJECT_ROOT
 sys.path.insert(0, str(PROJECT_ROOT))
 import llm  # noqa: E402
 from model_support import (  # noqa: E402
-    DEEPSEEK_V41_FLASH_MODEL, GLM_53_FLASH_MODEL,
+    DEEPSEEK_FLASH_MODEL, DEEPSEEK_V41_FLASH_MODEL, GLM_53_FLASH_MODEL,
 )
 
 
@@ -118,6 +118,7 @@ class CallLlmTests(unittest.TestCase):
             (GLM_53_FLASH_MODEL, "xhigh", "max"),
             (GLM_53_FLASH_MODEL, "none", "low"),
             (DEEPSEEK_V41_FLASH_MODEL, "xhigh", "xhigh"),
+            (DEEPSEEK_FLASH_MODEL, "xhigh", "high"),
         )
         for model, configured, expected in cases:
             with self.subTest(model=model, configured=configured):
@@ -127,6 +128,28 @@ class CallLlmTests(unittest.TestCase):
                     None, reasoning_effort=configured,
                 )
                 self.assertEqual(client.calls[0]["reasoning_effort"], expected)
+
+    def test_deepseek_api_uses_v41_alias_and_thinking_mode(self):
+        client = FakeClient([_resp(_msg())])
+        llm.call_llm(
+            client, "DeepSeek-V4.1-Flash", [{"role": "user", "content": "?"}],
+            None, reasoning_effort="max",
+        )
+        call = client.calls[0]
+        self.assertEqual(call["model"], DEEPSEEK_FLASH_MODEL)
+        self.assertEqual(call["reasoning_effort"], "max")
+        self.assertEqual(call["extra_body"], {"thinking": {"type": "enabled"}})
+
+    def test_deepseek_api_none_disables_thinking(self):
+        client = FakeClient([_resp(_msg())])
+        llm.call_llm(
+            client, DEEPSEEK_FLASH_MODEL, [{"role": "user", "content": "?"}],
+            None, reasoning_effort="none",
+        )
+        self.assertNotIn("reasoning_effort", client.calls[0])
+        self.assertEqual(
+            client.calls[0]["extra_body"], {"thinking": {"type": "disabled"}}
+        )
 
     def test_retry_on_429(self):
         message, client, sleeps = self._run([_http_err(RateLimitError, 429), _resp(_msg())])
