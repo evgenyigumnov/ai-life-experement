@@ -71,6 +71,15 @@ class TickNoteTests(unittest.TestCase):
         self.assertNotIn("Сейчас нет новых сообщений", final["content"])
         self.assertTrue(final["content"].endswith(agent.USER_MESSAGE))
 
+    def test_previous_llm_duration_is_visible_to_model(self):
+        iteration = _text_iter("шаг", n=1)
+        iteration["llm_duration"] = 47.17
+        final = agent.build_messages({"iterations": [iteration]}, self.paths)[-1]
+        self.assertIn(
+            "(последний ответ LLM генерировался 47.17 сек)",
+            final["content"],
+        )
+
     def test_unread_status_precedes_weight_note(self):
         append_message(self.paths.messages, SENDER_CREATOR, "письмо")
         final = agent.build_messages({"iterations": []}, self.paths)[-1]

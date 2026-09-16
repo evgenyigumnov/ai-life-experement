@@ -103,8 +103,8 @@ def handle_inspect_image(
         messages = [{
             "role": "user",
             "content": [
-                {"type": "image_url", "image_url": {"url": data_url}},
                 {"type": "text", "text": question},
+                {"type": "image_url", "image_url": {"url": data_url}},
             ],
         }]
         response = call_llm(

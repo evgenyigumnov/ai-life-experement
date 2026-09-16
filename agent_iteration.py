@@ -82,7 +82,8 @@ def run_iteration(paths: AgentPaths, cfg: Config, client,
         )
     record = {
         "n": number, "timestamp": now_iso(), "user": user_message,
-        "assistant_message": assistant, "tool_results": [],
+        "assistant_message": assistant, "llm_duration": duration,
+        "tool_results": [],
     }
     log(_format_llm_block(
         number, assistant.get("content"), duration, prompt_tokens,
@@ -102,7 +103,9 @@ def run_iteration(paths: AgentPaths, cfg: Config, client,
             "arguments": arguments, "result": result,
         })
         log(_format_tool_result_block(number, name, result))
+    if context.sleep_requested:
+        data["sleep_reason"] = context.sleep_reason
     appender(paths.mind_loop, data, record)
-    if is_session_end(number):
+    if is_session_end(number) or context.sleep_requested:
         archive = archiver(paths.mind_loop, data)
         log(_format_sleep_message(data.get("session") or 1, archive.name))

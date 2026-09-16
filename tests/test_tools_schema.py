@@ -86,17 +86,23 @@ class ArgumentsAndSchemaTests(unittest.TestCase):
         self.assertIn("...output truncated (137 chars)...", cut)
 
     def test_schema_structure(self):
-        self.assertEqual(len(tools.TOOLS_SCHEMA), 15)
+        self.assertEqual(len(tools.TOOLS_SCHEMA), 21)
         names = [t["function"]["name"] for t in tools.TOOLS_SCHEMA]
         self.assertEqual(
             names,
             [
                 "run_bash",
                 "read_file",
+                "write",
+                "edit",
+                "grep",
+                "find",
+                "ls",
                 "send_message",
                 "get_messages",
                 "get_memory",
                 "set_memory",
+                "sleep",
                 "diary_remember",
                 "diary_recall",
                 "diary_edit",
@@ -118,6 +124,14 @@ class ArgumentsAndSchemaTests(unittest.TestCase):
             if tool["function"]["name"] == "get_messages"
         )
         self.assertNotIn("force", get_messages["function"]["parameters"]["properties"])
+
+    def test_file_tools_are_loaded_from_tools_catalog(self):
+        from tools import discover_tools
+
+        discovered = [definition["function"]["name"] for definition, _ in discover_tools()]
+        self.assertEqual(discovered, ["write", "edit", "grep", "find", "ls"])
+        for name in discovered:
+            self.assertIn(name, tools._HANDLERS)
 
     def test_build_tools_schema_full_and_filtered(self):
         # полный список — с песочницей; выключенный — без обоих её инструментов
@@ -156,9 +170,10 @@ class ArgumentsAndSchemaTests(unittest.TestCase):
         )
         self.assertIn("timeout", function["parameters"]["properties"])
         self.assertEqual(function["parameters"]["required"], ["command"])
-        self.assertEqual(
-            function["parameters"]["properties"]["timeout"]["type"], "number"
-        )
+        timeout = function["parameters"]["properties"]["timeout"]
+        self.assertEqual(timeout["type"], "number")
+        self.assertEqual(timeout["minimum"], 1)
+        self.assertEqual(timeout["maximum"], tools_sandbox.MAX_BASH_TIMEOUT)
 
     def test_schema_descriptions_short_without_infra_details(self):
         """Описания схем короткие и без деталей инфраструктуры (шаг 4 плана)."""
@@ -185,11 +200,22 @@ class ArgumentsAndSchemaTests(unittest.TestCase):
         self.assertEqual(
             descriptions["set_memory"], "Заменить память полным новым текстом"
         )
+        self.assertEqual(
+            descriptions["sleep"],
+            "Добровольно завершить текущую сессию и начать новую",
+        )
         self.assertEqual(descriptions["send_message"], "Отправить сообщение создателю")
         self.assertEqual(
             descriptions["get_messages"],
             "Показать страницу переписки; непрочитанные помечаются "
             "прочитанными с отметкой «стало прочитанным»",
+        )
+        sleep = next(
+            tool for tool in tools.TOOLS_SCHEMA
+            if tool["function"]["name"] == "sleep"
+        )
+        self.assertEqual(
+            sleep["function"]["parameters"]["required"], ["reason"]
         )
         self.assertIn("1 единица = 1 следующий цикл/тик LLM без паузы перед ним", descriptions["money_balance"])
         self.assertIn("1 единица покупает 1 следующий цикл без паузы", descriptions["money_spend"])

@@ -192,6 +192,33 @@ class DockerSandboxTests(unittest.TestCase):
         self.assertIn("1 | alpha", out)
         self.assertIn("2 | beta", out)
 
+    def test_read_file_empty_file_is_end_of_file(self):
+        _bash(": > /root/empty.txt", paths=self.paths)
+        out = self._read("/root/empty.txt")
+        self.assertIn("0 строк", out)
+        self.assertIn("(конец файла)", out)
+        self.assertNotIn("offset=", out)
+
+    def test_read_file_output_has_common_byte_limit(self):
+        _bash(
+            "for i in $(seq 1 100); do head -c 2400 /dev/zero | tr '\\0' x; printf '\\n'; done > /root/large-lines.txt",
+            paths=self.paths,
+        )
+        out = self._read("/root/large-lines.txt", limit=1000)
+        self.assertLessEqual(len(out.encode("utf-8")), 52 * 1024)
+        self.assertIn("truncatedBy=bytes", out)
+        self.assertIn("всего 2400 симв.", out)
+        self.assertIn("продолжение — read_file offset=", out)
+
+    def test_read_file_rejects_late_binary_marker(self):
+        _bash(
+            "head -c 9000 /dev/zero | tr '\\0' 'a' > /root/late.bin; "
+            "printf '\\0' >> /root/late.bin",
+            paths=self.paths,
+        )
+        out = self._read("/root/late.bin")
+        self.assertIn("Error: двоичный файл", out)
+
     def test_read_file_errors(self):
         missing = self._read("/definitely/not/here.txt")
         self.assertIn("Error: file not found: /definitely/not/here.txt", missing)

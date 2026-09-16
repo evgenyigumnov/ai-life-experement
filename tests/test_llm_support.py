@@ -65,6 +65,7 @@ class MakeClientTests(unittest.TestCase):
         self.assertEqual(client.api_key, "sk-test")
         self.assertTrue(str(client.base_url).startswith("http://localhost:9/v1"))
         self.assertEqual(client.max_retries, 0)
+        self.assertEqual(llm.REQUEST_TIMEOUT, 600.0)
         self.assertEqual(client.timeout, llm.REQUEST_TIMEOUT)
 
 

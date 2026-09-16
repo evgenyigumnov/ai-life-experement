@@ -41,6 +41,9 @@ class RunLoopHistoryTests(RunLoopTestCase):
         second = data["iterations"][1]
         self.assertEqual(second["assistant_message"]["content"], "готово")
         self.assertEqual(second["tool_results"], [])
+        for iteration in data["iterations"]:
+            self.assertIsInstance(iteration["llm_duration"], float)
+            self.assertGreaterEqual(iteration["llm_duration"], 0.0)
 
         # round-trip: история воспроизводится корректной последовательностью
         messages = agent.build_messages(data, self.paths)
@@ -48,6 +51,29 @@ class RunLoopHistoryTests(RunLoopTestCase):
                          ["system", "assistant", "tool", "assistant", "user"])
         # без остаточных tmp-файлов
         self.assertEqual([p.name for p in self.folder.glob("*.tmp")], [])
+
+    def test_next_request_receives_previous_generation_duration(self):
+        requests = []
+        responses = [{"role": "assistant", "content": "первый"},
+                     {"role": "assistant", "content": "второй"}]
+
+        def fake_call_llm(client, model, messages, tools, temperature=0.7,
+                          reasoning_effort=None):
+            requests.append(messages)
+            if responses:
+                return responses.pop(0)
+            raise KeyboardInterrupt
+
+        with mock.patch.object(agent_loop, "make_client", lambda cfg: object()), \
+             mock.patch.object(agent_loop, "call_llm", fake_call_llm):
+            agent.run_loop(self.paths, self.cfg)
+
+        data = json.loads(self.paths.mind_loop.read_text(encoding="utf-8"))
+        duration = data["iterations"][0]["llm_duration"]
+        self.assertIn(
+            f"(последний ответ LLM генерировался {duration:.2f} сек)",
+            requests[1][-1]["content"],
+        )
 
     def test_empty_response_recorded_as_error_iteration(self):
         empty = {"role": "assistant", "content": None, "tool_calls": None}

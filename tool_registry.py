@@ -20,6 +20,7 @@ from tools_diary import (
 from tools_diary_schema import EDIT_TOOL, RECALL_TOOL, REMEMBER_TOOL, TAGS_TOOL
 from tools_memory import GET_MEMORY_TOOL, SET_MEMORY_TOOL
 from tools_memory import handle_get_memory, handle_set_memory
+from tools_sleep import SLEEP_TOOL, handle_sleep
 from tools_readfile import READ_FILE_TOOL, handle_read_file
 from tools_sandbox import RUN_BASH_TOOL, bash_tool_enabled, handle_run_bash
 from tools_vision import INSPECT_IMAGE_TOOL, handle_inspect_image
@@ -31,15 +32,18 @@ from tools_search import (
 from tools_web_fetch import WEB_FETCH_TOOL, handle_web_fetch
 from tools_money import handle_money_balance, handle_money_spend
 from tools_money_schema import MONEY_BALANCE_TOOL, MONEY_SPEND_TOOL
+from tool_catalog import DYNAMIC_HANDLERS, DYNAMIC_NAMES, DYNAMIC_SCHEMAS
 
 
 TOOLS_SCHEMA = [
     RUN_BASH_TOOL,
     READ_FILE_TOOL,
+    *DYNAMIC_SCHEMAS,
     SEND_MESSAGE_TOOL,
     GET_MESSAGES_TOOL,
     GET_MEMORY_TOOL,
     SET_MEMORY_TOOL,
+    SLEEP_TOOL,
     REMEMBER_TOOL,
     RECALL_TOOL,
     EDIT_TOOL,
@@ -51,9 +55,9 @@ TOOLS_SCHEMA = [
     MONEY_SPEND_TOOL,
 ]
 
-SANDBOX_TOOLS = ("run_bash", "read_file")
+SANDBOX_TOOLS = ("run_bash", "read_file", *DYNAMIC_NAMES)
 PATHLESS_TOOLS = (
-    *SANDBOX_TOOLS, "internet_search", "web_fetch", "inspect_image"
+    *SANDBOX_TOOLS, "internet_search", "web_fetch", "inspect_image", "sleep"
 )
 
 _HANDLERS = {
@@ -63,6 +67,7 @@ _HANDLERS = {
     "get_messages": handle_get_messages,
     "get_memory": handle_get_memory,
     "set_memory": handle_set_memory,
+    "sleep": handle_sleep,
     "diary_remember": handle_diary_remember,
     "diary_recall": handle_diary_recall,
     "diary_edit": handle_diary_edit,
@@ -72,6 +77,7 @@ _HANDLERS = {
     "inspect_image": handle_inspect_image,
     "money_balance": handle_money_balance,
     "money_spend": handle_money_spend,
+    **DYNAMIC_HANDLERS,
 }
 
 
@@ -115,7 +121,7 @@ def dispatch_tool(
         return f"Error: unknown tool: {name}"
     if paths is None and name not in PATHLESS_TOOLS:
         return "Error: paths не заданы"
-    if name == "inspect_image":
+    if name in {"inspect_image", "sleep"}:
         return handler(args, paths, context)
     return handler(args, paths)
 

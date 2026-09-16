@@ -4,28 +4,26 @@
 (строки/байты) и сколько прочитано, затем запрошенный диапазон строк с
 номерами: большие файлы модель листает страницами через offset — это
 защищает контекст LLM от раздувания. Сверхдлинные строки обрезаются до
-READ_FILE_MAX_LINE_CHARS; limit вне диапазона — не ошибка, а приведение
-к границе с пометкой в ответе.
+READ_FILE_MAX_LINE_CHARS, а весь ответ — общими лимитами вывода; limit вне
+диапазона — не ошибка, а приведение к границе с пометкой в ответе.
 """
-
-import json
 
 from agent_paths import AgentPaths
 from sandbox_scripts import READER_SCRIPT, exec_python
-from tools_sandbox import bash_tool_enabled, sandbox_container_name, truncate
+from tools_readfile_exec import READ_FILE_TIMEOUT, run_read_file as _run_read_file
+from tools_readfile_output import READ_FILE_MAX_LINE_CHARS, format_read_file_result
+from tools_sandbox import bash_tool_enabled, sandbox_container_name
 
 READ_FILE_DEFAULT_LIMIT = 200  # строк на страницу read_file по умолчанию
 READ_FILE_MAX_LIMIT = 1000  # верхняя граница limit у read_file
-READ_FILE_MAX_LINE_CHARS = 2000  # обрезка одной сверхдлинной строки в ответе
-READ_FILE_TIMEOUT = 30  # host-таймаут чтения файла из песочницы, сек
 
 READ_FILE_TOOL = {
     "type": "function",
     "function": {
         "name": "read_file",
         "description": (
-            "Прочитать страницу текстового файла из песочницы; большой файл "
-            "листай по частям через offset"
+            "Прочитать страницу текстового файла; ответ до 2000 строк или "
+            "50 КБ, большой файл листай через offset"
         ),
         "parameters": {
             "type": "object",
@@ -55,49 +53,6 @@ READ_FILE_TOOL = {
 }
 
 
-def format_read_file_result(data: dict, limit_note: str | None = None) -> str:
-    """Отформатировать страницу файла для ответа tool.
-
-    Шапка — объём (всего строк/байт) и сколько реально прочитано, затем
-    строки с номерами; если страница не последняя — подсказка с offset для
-    продолжения. limit_note — пометка о приведении limit к границе.
-    """
-    total = data["total_lines"]
-    start, end = data["start"], data["end"]
-    width = len(str(end))
-    body = []
-    for n, line in zip(range(start, end + 1), data["lines"]):
-        if len(line) > READ_FILE_MAX_LINE_CHARS:
-            line = (
-                line[:READ_FILE_MAX_LINE_CHARS]
-                + f"…(строка обрезана, всего {len(line)} симв.)"
-            )
-        body.append(f"{str(n).rjust(width)} | {line}")
-    shown = end - start + 1
-    # ~ — байты приблизительные: терминаторы строк и замены невалидного
-    # utf-8 в точный размер страницы не складываются.
-    read_bytes = sum(
-        len(line.encode("utf-8", errors="replace")) + 1 for line in data["lines"]
-    )
-    header = (
-        f"{data['path']} — {total} строк, {data['size']} байт; "
-        f"прочитано {shown} из {total} строк (~{read_bytes} из {data['size']} байт)"
-    )
-    notes = []
-    if limit_note:
-        notes.append(limit_note)
-    if end < total:
-        notes.append(
-            f"показаны строки {start}–{end} из {total}; "
-            f"продолжение — read_file offset={end + 1}"
-        )
-    elif start > 1:
-        notes.append(f"показаны строки {start}–{end} из {total} (конец файла)")
-    else:
-        notes.append("(конец файла)")
-    return "\n".join([header, *notes, ""] + body)
-
-
 def run_read_file(
     path: str,
     offset: int,
@@ -105,55 +60,17 @@ def run_read_file(
     container_name: str = "default",
     limit_note: str | None = None,
 ) -> str:
-    """Прочитать страницу файла из контейнера агента (READER_SCRIPT).
-
-    Хостовая файловая система агенту недоступна. Ошибки раннера (файла нет,
-    директория, двоичный файл, offset за концом) переводятся в понятные
-    модели «Error: ...».
-    """
-    error, proc, stdout, stderr = exec_python(
+    """Совместимый фасад чтения."""
+    return _run_read_file(
+        path,
+        offset,
+        limit,
         container_name,
-        READER_SCRIPT,
-        [path, str(offset), str(limit)],
-        READ_FILE_TIMEOUT,
+        limit_note,
+        executor=exec_python,
+        script=READER_SCRIPT,
+        timeout=READ_FILE_TIMEOUT,
     )
-    if error == "TIMEOUT":
-        return f"TIMEOUT after {READ_FILE_TIMEOUT}s (чтение прервано)"
-    if error is not None:
-        return error
-
-    try:
-        data = json.loads(stdout.strip())
-    except Exception:
-        data = None
-
-    if isinstance(data, dict):
-        err_kind = data.get("error")
-        if err_kind == "not_found":
-            return f"Error: file not found: {path}"
-        if err_kind == "is_dir":
-            return (
-                f"Error: это директория, а не файл: {path} "
-                f"(список файлов — run_bash ls)"
-            )
-        if err_kind == "binary":
-            return f"Error: двоичный файл: {path} ({data.get('size')} байт)"
-        if err_kind == "offset_out_of_range":
-            return (
-                f"Error: offset={offset} за пределами файла "
-                f"(всего {data.get('total_lines')} строк)"
-            )
-        if "lines" in data:
-            return format_read_file_result(data, limit_note=limit_note)
-
-    parts = [f"$ read_file {path} offset={offset} limit={limit}"]
-    parts.append(f"returncode: {proc.returncode}")
-    parts.append("--- stdout ---")
-    parts.append(stdout.strip() or "(пусто)")
-    if stderr.strip():
-        parts.append("--- stderr ---")
-        parts.append(stderr.strip())
-    return truncate("\n".join(parts))
 
 
 def handle_read_file(args: dict, paths: AgentPaths | None) -> str:

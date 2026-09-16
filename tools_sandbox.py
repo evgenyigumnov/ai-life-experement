@@ -3,20 +3,18 @@
 ВЫКЛЮЧЕН ПО УМОЛЧАНИЮ (ENABLE_BASH_TOOL в .env): в схему tools для LLM не
 попадает и не исполняется, пока флаг не включён. Включённый run_bash
 исполняется в изолированном контейнере агента (см. sandbox_docker) через
-RUNNER_SCRIPT с контролем таймаута; вывод обрезается до MAX_OUTPUT_CHARS.
+RUNNER_SCRIPT с контролем таймаута; вывод проходит общий лимит 2000 строк/50 КБ.
 """
 
 import json
-import os
 
 from agent_paths import AgentPaths
-from config_env import parse_bool_env
 from sandbox_scripts import RUNNER_SCRIPT, exec_python
-
-ENABLE_BASH_TOOL_ENV = "ENABLE_BASH_TOOL"  # имя переменной в .env/окружении
-DEFAULT_BASH_TIMEOUT = 5  # таймаут команды по умолчанию, сек
-MAX_BASH_TIMEOUT = 300  # верхняя граница таймаута, сек
-MAX_OUTPUT_CHARS = 10_000  # лимит вывода run_bash до обрезки
+from tools_bash_output import MAX_OUTPUT_CHARS, format_bash_result, truncate
+from tools_sandbox_config import (
+    DEFAULT_BASH_TIMEOUT, ENABLE_BASH_TOOL_ENV, MAX_BASH_TIMEOUT,
+    bash_tool_enabled, sandbox_container_name,
+)
 
 RUN_BASH_TOOL = {
     "type": "function",
@@ -32,10 +30,12 @@ RUN_BASH_TOOL = {
                 },
                 "timeout": {
                     "type": "number",
+                    "minimum": 1,
+                    "maximum": MAX_BASH_TIMEOUT,
                     "description": (
                         "Необязательный таймаут в секундах "
                         f"(по умолчанию {DEFAULT_BASH_TIMEOUT}, "
-                        f"максимум {MAX_BASH_TIMEOUT})"
+                        f"допустимо 1-{MAX_BASH_TIMEOUT})"
                     ),
                 },
             },
@@ -43,35 +43,6 @@ RUN_BASH_TOOL = {
         },
     },
 }
-
-
-def bash_tool_enabled() -> bool:
-    """Включён ли tool run_bash (ENABLE_BASH_TOOL; по умолчанию выключен).
-
-    Строгая валидация значения выполняется в config_env.load_config при запуске
-    агента; здесь нераспознанное значение трактуется как «выключен» —
-    безопасное поведение по умолчанию.
-    """
-    return parse_bool_env(os.environ.get(ENABLE_BASH_TOOL_ENV, "")) is True
-
-
-def sandbox_container_name(paths: AgentPaths | None) -> str:
-    """Имя Docker-контейнера агента: имя агента или дефолт."""
-    if paths is not None:
-        return (
-            getattr(paths, "name", None)
-            or (paths.folder.name if getattr(paths, "folder", None) else None)
-            or "default"
-        )
-    return "default"
-
-
-def truncate(text: str) -> str:
-    """Обрезать длинный вывод с пометкой (чтобы не раздувать историю)."""
-    if len(text) <= MAX_OUTPUT_CHARS:
-        return text
-    cut = text[:MAX_OUTPUT_CHARS]
-    return f"{cut}\n...output truncated ({len(text) - MAX_OUTPUT_CHARS} chars)..."
 
 
 def run_bash(command: str, timeout: float, container_name: str = "default") -> str:
@@ -89,14 +60,9 @@ def run_bash(command: str, timeout: float, container_name: str = "default") -> s
         return error
 
     if proc.returncode != 0 and not stdout.strip():
-        return truncate("\n".join([
-            f"$ {command}",
-            f"returncode: {proc.returncode}",
-            "--- stdout ---",
-            "(пусто)",
-            "--- stderr ---",
-            stderr.strip() or "(пусто)",
-        ]))
+        return format_bash_result(
+            command, proc.returncode, "", stderr.strip() or "(пусто)"
+        )
 
     try:
         data = json.loads(stdout.strip())
@@ -114,14 +80,7 @@ def run_bash(command: str, timeout: float, container_name: str = "default") -> s
         out_str = stdout
         err_str = stderr
 
-    return truncate("\n".join([
-        f"$ {command}",
-        f"returncode: {returncode}",
-        "--- stdout ---",
-        out_str or "(пусто)",
-        "--- stderr ---",
-        err_str or "(пусто)",
-    ]))
+    return format_bash_result(command, returncode, out_str, err_str)
 
 
 def handle_run_bash(args: dict, paths: AgentPaths | None) -> str:
@@ -137,7 +96,7 @@ def handle_run_bash(args: dict, paths: AgentPaths | None) -> str:
     if (
         not isinstance(timeout, (int, float))
         or isinstance(timeout, bool)
-        or timeout <= 0
+        or timeout < 1
         or timeout > MAX_BASH_TIMEOUT
     ):
         return (

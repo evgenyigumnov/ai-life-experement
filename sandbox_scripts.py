@@ -1,15 +1,8 @@
-"""Скрипты песочницы и их запуск внутри контейнера агента.
+"""Скрипты песочницы и запуск docker exec.
 
-RUNNER_SCRIPT запускает bash-команду в новой сессии (start_new_session=True):
-команда получает отдельный process group (pgid), и при таймауте killpg убивает
-всю группу, включая запущенные в фоне дочерние процессы (например `sleep &`).
-
-READER_SCRIPT отдаёт страницу файла с метаданными (объём, всего строк) —
-модель сначала видит объём, затем листает страницы через offset, не вытягивая
-файл целиком.
-
-exec_python — общая обвязка `docker exec ... python3 -`: проверка docker,
-гарантия контейнера, Popen со скриптом на stdin и host-таймаутом.
+RUNNER_SCRIPT запускает bash в отдельной process group, чтобы таймаут убивал
+и фоновых детей. READER_SCRIPT отдаёт страницу с метаданными, не собирая весь
+файл в память. exec_python — общая обвязка с проверкой Docker и таймаутом.
 """
 
 import subprocess
@@ -44,7 +37,7 @@ print(json.dumps(data))
 """
 
 READER_SCRIPT = """
-import sys, json, os
+import json, os, sys
 
 path = sys.argv[1]
 offset = int(sys.argv[2])
@@ -58,28 +51,38 @@ if os.path.isdir(path):
     raise SystemExit
 
 size = os.path.getsize(path)
-with open(path, "rb") as f:
-    if b"\\x00" in f.read(8192):
-        print(json.dumps({"error": "binary", "size": size}))
-        raise SystemExit
-    f.seek(0)
-    raw = f.read()
+with open(path, "rb") as binary_file:
+    while chunk := binary_file.read(65536):
+        if b"\\x00" in chunk:
+            print(json.dumps({"error": "binary", "size": size}))
+            raise SystemExit
 
-lines = raw.decode("utf-8", errors="replace").splitlines()
-total = len(lines)
-if offset > total:
+MAX_LINE_CHARS = 2000
+lines = []
+line_lengths = []
+total = 0
+with open(path, "r", encoding="utf-8", errors="replace", newline=None) as text_file:
+    for line in text_file:
+        total += 1
+        if offset <= total < offset + limit:
+            value = line.rstrip("\\r\\n")
+            line_lengths.append(len(value))
+            lines.append(value[:MAX_LINE_CHARS])
+
+if offset > total and not (total == 0 and offset == 1):
     print(json.dumps({"error": "offset_out_of_range", "total_lines": total}))
     raise SystemExit
 
 start = offset
-end = min(start + limit - 1, total)
+end = min(start + len(lines) - 1, total) if lines else 0
 print(json.dumps({
     "path": path,
     "size": size,
     "total_lines": total,
     "start": start,
     "end": end,
-    "lines": lines[start - 1:end],
+    "lines": lines,
+    "line_lengths": line_lengths,
 }))
 """
 

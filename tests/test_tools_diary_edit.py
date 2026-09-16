@@ -52,7 +52,7 @@ class DiaryEditToolsTests(unittest.TestCase):
                 )
 
     def test_legacy_unprefixed_diary_names_unknown(self):
-        for name in ("remember", "recall", "edit", "forget", "restore", "history"):
+        for name in ("remember", "recall", "forget", "restore", "history"):
             self.assertEqual(
                 tools.execute_tool(name, "{}", self.paths),
                 f"Error: unknown tool: {name}",

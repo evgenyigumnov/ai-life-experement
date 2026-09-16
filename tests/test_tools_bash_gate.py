@@ -1,5 +1,6 @@
 """Флаг ENABLE_BASH_TOOL: гейтинг песочницы в схеме и исполнении."""
 
+import json
 import shutil
 import sys
 import tempfile
@@ -53,6 +54,7 @@ class BashToolDisabledTests(unittest.TestCase):
                     "get_messages",
                     "get_memory",
                     "set_memory",
+                    "sleep",
                     "diary_remember",
                     "diary_recall",
                     "diary_edit",
@@ -72,10 +74,16 @@ class BashToolDisabledTests(unittest.TestCase):
             [
                 "run_bash",
                 "read_file",
+                "write",
+                "edit",
+                "grep",
+                "find",
+                "ls",
                 "send_message",
                 "get_messages",
                 "get_memory",
                 "set_memory",
+                "sleep",
                 "diary_remember",
                 "diary_recall",
                 "diary_edit",
@@ -108,6 +116,21 @@ class BashToolDisabledTests(unittest.TestCase):
             self.assertTrue(out.startswith("Error:"), out)
             self.assertIn("выключен", out)
             self.assertIn("ENABLE_BASH_TOOL", out)
+
+    def test_new_file_tools_are_disabled_with_the_sandbox(self):
+        calls = {
+            "write": {"path": "/root/x", "content": "x"},
+            "edit": {"path": "/root/x", "old": "x", "new": "y"},
+            "grep": {"pattern": "x"},
+            "find": {"pattern": "*"},
+            "ls": {},
+        }
+        with env(ENABLE_BASH_TOOL=None):
+            for name, args in calls.items():
+                with self.subTest(name=name):
+                    out = tools.execute_tool(name, json.dumps(args), self.paths)
+                    self.assertIn("выключен", out)
+                    self.assertIn("ENABLE_BASH_TOOL", out)
 
     def test_other_tools_work_when_bash_disabled(self):
         with env(ENABLE_BASH_TOOL=None):

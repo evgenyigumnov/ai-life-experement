@@ -48,6 +48,15 @@ def _config_error(message: str) -> None:
     die(message, "Ошибка конфигурации")
 
 
+def _api_key() -> str:
+    """Прочитать общий ключ или стандартное имя ключа DeepSeek."""
+    return (
+        os.environ.get("OPENAI_API_KEY", "").strip()
+        or os.environ.get("DEEPSEEK_API_KEY", "").strip()
+        or "dummy"
+    )
+
+
 def _int_env(name: str, default: int) -> int:
     raw = os.environ.get(name, "").strip()
     if not raw:
@@ -106,7 +115,7 @@ def load_config() -> Config:
     return Config(
         base_url=base_url,
         model=model,
-        api_key=os.environ.get("OPENAI_API_KEY", "").strip() or "dummy",
+        api_key=_api_key(),
         agents_root=os.environ.get("AGENTS_ROOT", "").strip() or None,
         loop_delay=loop_delay,
         temperature=temperature,

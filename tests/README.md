@@ -29,7 +29,7 @@
 | `test_diary` / `test_diary_pagination` / `test_diary_edit` | diary.json: загрузка/бэкапы, remember/recall с фильтрами и курсорами, точечная правка и валидация |
 | `test_diary_index` / `test_diary_search` / `test_diary_vec` | автоиндексация, FTS5, sqlite-vec, fallback и свежесть индексов |
 | `test_message_format` / `test_time_utils` | общие форматирование сообщений и ISO-время |
-| `test_llm` / `test_llm_support` | ретраи call_llm (429/сеть/5xx, backoff 2-4-8-16, пауза 60 и новый цикл), постоянные ошибки (400), пустой ответ, Ctrl+C во время паузы, usage без мутации SDK-сообщения (регрессия MockValSer), make_client |
+| `test_llm` / `test_llm_support` / `test_model_support` | ретраи call_llm (429/сеть/5xx, backoff 2-4-8-16, пауза 60 и новый цикл), постоянные ошибки (400), пустой ответ, Ctrl+C во время паузы, usage без мутации SDK-сообщения (регрессия MockValSer), make_client; профили GLM-5.3-Flash, DeepInfra и официального DeepSeek API |
 | `test_llm_live` | живой smoke-тест: минимальный запрос на сервер из .env (load_config → make_client → call_llm → сериализация для истории → prompt_tokens); при недоступном сервере skip, `AI_LIVE_REQUIRED=1` — обязательность провалом |
 | `test_agent_build_messages` | `build_messages`: воспроизведение истории (текст, tool-calls по id и по порядку, итерации-ошибки, нормализация SDK-словарей, пробельные/пустые content, отсутствие урезания истории, перечитывание system-prompt.md) |
 | `test_agent_message_files` | тексты сообщений из файлов папки агента: переопределения user/last-iteration/wake-up, sleep-warning с `{remaining}`+`{memory_note}`, repeat-alert, перечитывание при каждой сборке, пустой файл → дефолт |
@@ -62,14 +62,15 @@
 | `test_tools_docker` | управление образом/контейнерами (restart=always, перезапуск остановленного), валидация timeout, ошибки недоступного Docker |
 | `test_tools_readfile_args` / `test_tools_readfile_unit` | read_file: валидация аргументов до песочницы; без docker — сборка команды раннера, клампинг limit с пометкой, форматирование страниц |
 | `test_tools_memory` | get/set_memory: пустая память, roundtrip, валидация |
+| `test_tools_sleep` | sleep: обязательная причина, сигнал раннего сна и результат tool |
 | `test_tools_money` | money_balance/money_spend: схемы, расписание, purpose, успешные операции и безопасные ошибки |
 | `test_tools_diary` / `test_tools_diary_edit` | tools дневника: remember/recall (фильтры, пагинация курсором) и точечная edit, границы имён |
 | `test_diary_tags` | diary_tags: частоты тегов записей (оглавление тем) — подсчёт/сортировка/лимиты, формат ответа и плюрализация, read-only, схема и регистрация |
 | `test_tools_search` / `test_tools_search_errors` | internet_search: схема, валидация, один HTTP-запрос, ошибки и форматирование результатов Brave |
 | `test_tools_web_fetch` | web_fetch: прямая загрузка без Brave, HTML-текст, ссылки и постраничное чтение |
 | `test_tools_vision` / `test_vision_source` / `test_vision_image` | inspect_image: валидация, Docker/URL-источник, JPEG-нормализация и очистка reasoning |
-| `test_vision_live` | два smoke-вызова inspect_image (URL и Docker path) через реальный LLM; skip без доступной инфраструктуры |
-| `test_tools_schema` | схемы: структура (15 инструментов), гейтинг internet_search/песочницы, web_fetch без ключа, описание money-расписания, сериализуемость, unknown tools и разбор аргументов |
+| `test_vision_live` | два smoke-вызова inspect_image (URL и Docker path) через реальный LLM/API; skip без доступной инфраструктуры |
+| `test_tools_schema` / `test_tools_file_common` / `test_tools_file_tools` | схемы 21 инструмента, автоматическая регистрация файловых tools, гейтинг песочницы, общие лимиты, очередь мутаций и интеграционные write/edit/grep/find/ls |
 | `test_main` / `test_main_money` | точка входа: обычные аргументы, баннер, Docker и run_loop; pay/balance/history с обязательным существующим агентом без LLM-конфигурации, unread-сообщение и история трат |
 | `test_dockerfile` | Dockerfile песочницы: установлен vim, vi — симлинк на vim, задана UTF-8 локаль |
 
