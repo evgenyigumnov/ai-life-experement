@@ -70,6 +70,20 @@ class ReplyDisplayTests(unittest.TestCase):
         self.assertNotIn(agent_console._Colors.MAGENTA, output)
         self.assertIn(agent_console._Colors.RESET, output)
 
+    def test_tty_uses_persistent_session_and_passes_history_cursor(self):
+        self._write_messages(3)
+        with mock.patch.object(main_reply, "_is_interactive_terminal", return_value=True), \
+             mock.patch.object(main_reply, "run_reply_session") as run_session, \
+             env(AGENTS_ROOT=str(self.root)), \
+             redirect_stdout(StringIO()):
+            main_reply._reply_mode("bot")
+
+        run_session.assert_called_once()
+        paths, count, callback = run_session.call_args.args
+        self.assertEqual(paths.messages, self.folder / "messages.json")
+        self.assertEqual(count, 3)
+        self.assertTrue(callable(callback))
+
 
 if __name__ == "__main__":
     unittest.main()

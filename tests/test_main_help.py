@@ -22,6 +22,9 @@ class HelpTests(unittest.TestCase):
         self.assertIn("history", output)
         self.assertIn("Денежные команды", output)
         self.assertIn("не создают новых агентов", output)
+        self.assertIn("Shift+Enter/Ctrl+Enter", output)
+        self.assertIn("подгружаются автоматически", output)
+        self.assertIn("Ctrl+J", output)
         self.assertEqual(err.getvalue(), "")
         mock_run_loop.assert_not_called()
 

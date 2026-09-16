@@ -1,7 +1,8 @@
 # Тесты ai-life
 
-Юнит- и интеграционные тесты (stdlib `unittest`, без внешних зависимостей;
-совместимы и с pytest, если он появится).
+Юнит- и интеграционные тесты (stdlib `unittest`; интерактивный редактор
+reply дополнительно проверяется при установленном `prompt_toolkit`). Совместимы
+и с pytest, если он появится.
 
 ## Запуск
 
@@ -71,7 +72,8 @@
 | `test_tools_vision` / `test_vision_source` / `test_vision_image` | inspect_image: валидация, Docker/URL-источник, JPEG-нормализация и очистка reasoning |
 | `test_vision_live` | два smoke-вызова inspect_image (URL и Docker path) через реальный LLM/API; skip без доступной инфраструктуры |
 | `test_tools_schema` / `test_tools_file_common` / `test_tools_file_tools` | схемы 21 инструмента, автоматическая регистрация файловых tools, гейтинг песочницы, общие лимиты, очередь мутаций и интеграционные write/edit/grep/find/ls |
-| `test_main` / `test_main_money` | точка входа: обычные аргументы, баннер, Docker и run_loop; pay/balance/history с обязательным существующим агентом без LLM-конфигурации, unread-сообщение и история трат |
+| `test_main` / `test_main_money` / `test_main_reply_format` | точка входа: обычные аргументы, баннер, Docker и run_loop; pay/balance/history с обязательным существующим агентом без LLM-конфигурации, unread-сообщение и история трат; оформление и постоянный reply-режим |
+| `test_reply_input` / `test_reply_session` / `test_reply_watcher` | многострочный редактор, отправка без перезапуска и автоматическая выдача новых ответов агента |
 | `test_dockerfile` | Dockerfile песочницы: установлен vim, vi — симлинк на vim, задана UTF-8 локаль |
 
 Живые smoke-тесты vision и эмбеддингов запускаются отдельно:
