@@ -61,6 +61,7 @@
 | `test_tools_docker` | управление образом/контейнерами (restart=always, перезапуск остановленного), валидация timeout, ошибки недоступного Docker |
 | `test_tools_readfile_args` / `test_tools_readfile_unit` | read_file: валидация аргументов до песочницы; без docker — сборка команды раннера, клампинг limit с пометкой, форматирование страниц |
 | `test_tools_memory` | get/set_memory: пустая память, roundtrip, валидация |
+| `test_tools_sleep` | sleep: обязательная причина, сигнал раннего сна и результат tool |
 | `test_tools_money` | money_balance/money_spend: схемы, расписание, purpose, успешные операции и безопасные ошибки |
 | `test_tools_diary` / `test_tools_diary_edit` | tools дневника: remember/recall (фильтры, пагинация курсором) и точечная edit, границы имён |
 | `test_diary_tags` | diary_tags: частоты тегов записей (оглавление тем) — подсчёт/сортировка/лимиты, формат ответа и плюрализация, read-only, схема и регистрация |
@@ -68,7 +69,7 @@
 | `test_tools_web_fetch` | web_fetch: прямая загрузка без Brave, HTML-текст, ссылки и постраничное чтение |
 | `test_tools_vision` / `test_vision_source` / `test_vision_image` | inspect_image: валидация, Docker/URL-источник, JPEG-нормализация и очистка reasoning |
 | `test_vision_live` | два smoke-вызова inspect_image (URL и Docker path) через реальный LLM; skip без доступной инфраструктуры |
-| `test_tools_schema` | схемы: структура (15 инструментов), гейтинг internet_search/песочницы, web_fetch без ключа, описание money-расписания, сериализуемость, unknown tools и разбор аргументов |
+| `test_tools_schema` | схемы: структура (16 инструментов), гейтинг internet_search/песочницы, web_fetch без ключа, описание money-расписания, сериализуемость, unknown tools и разбор аргументов |
 | `test_main` / `test_main_money` | точка входа: обычные аргументы, баннер, Docker и run_loop; pay/balance/history с обязательным существующим агентом без LLM-конфигурации, unread-сообщение и история трат |
 | `test_dockerfile` | Dockerfile песочницы: установлен vim, vi — симлинк на vim, задана UTF-8 локаль |
 

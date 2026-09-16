@@ -102,7 +102,9 @@ def run_iteration(paths: AgentPaths, cfg: Config, client,
             "arguments": arguments, "result": result,
         })
         log(_format_tool_result_block(number, name, result))
+    if context.sleep_requested:
+        data["sleep_reason"] = context.sleep_reason
     appender(paths.mind_loop, data, record)
-    if is_session_end(number):
+    if is_session_end(number) or context.sleep_requested:
         archive = archiver(paths.mind_loop, data)
         log(_format_sleep_message(data.get("session") or 1, archive.name))
