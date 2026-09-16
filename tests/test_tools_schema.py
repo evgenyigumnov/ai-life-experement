@@ -86,7 +86,7 @@ class ArgumentsAndSchemaTests(unittest.TestCase):
         self.assertIn("...output truncated (137 chars)...", cut)
 
     def test_schema_structure(self):
-        self.assertEqual(len(tools.TOOLS_SCHEMA), 15)
+        self.assertEqual(len(tools.TOOLS_SCHEMA), 16)
         names = [t["function"]["name"] for t in tools.TOOLS_SCHEMA]
         self.assertEqual(
             names,
@@ -97,6 +97,7 @@ class ArgumentsAndSchemaTests(unittest.TestCase):
                 "get_messages",
                 "get_memory",
                 "set_memory",
+                "sleep",
                 "diary_remember",
                 "diary_recall",
                 "diary_edit",
@@ -185,11 +186,22 @@ class ArgumentsAndSchemaTests(unittest.TestCase):
         self.assertEqual(
             descriptions["set_memory"], "Заменить память полным новым текстом"
         )
+        self.assertEqual(
+            descriptions["sleep"],
+            "Добровольно завершить текущую сессию и начать новую",
+        )
         self.assertEqual(descriptions["send_message"], "Отправить сообщение создателю")
         self.assertEqual(
             descriptions["get_messages"],
             "Показать страницу переписки; непрочитанные помечаются "
             "прочитанными с отметкой «стало прочитанным»",
+        )
+        sleep = next(
+            tool for tool in tools.TOOLS_SCHEMA
+            if tool["function"]["name"] == "sleep"
+        )
+        self.assertEqual(
+            sleep["function"]["parameters"]["required"], ["reason"]
         )
         self.assertIn("1 единица = 1 следующий цикл/тик LLM без паузы перед ним", descriptions["money_balance"])
         self.assertIn("1 единица покупает 1 следующий цикл без паузы", descriptions["money_spend"])

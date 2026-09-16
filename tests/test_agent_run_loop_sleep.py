@@ -5,7 +5,9 @@ import json
 import unittest
 from unittest import mock
 
-from tests.agent_common import RunLoopTestCase, agent, agent_loop, agent_sleep
+from tests.agent_common import (
+    RunLoopTestCase, _run_loop_mocked, agent, agent_loop, agent_sleep,
+)
 
 
 class RunLoopSleepArchiveTests(RunLoopTestCase):
@@ -101,6 +103,44 @@ class RunLoopSleepArchiveTests(RunLoopTestCase):
 
         # без остаточных tmp-файлов
         self.assertEqual([p.name for p in self.folder.glob("*.tmp")], [])
+
+    def test_agent_can_sleep_before_thirty_iterations(self):
+        reason = "устал: контекст стал слишком большим по токенам"
+        sleep_response = {
+            "role": "assistant", "content": None,
+            "tool_calls": [{
+                "id": "sleep-1", "type": "function",
+                "function": {
+                    "name": "sleep",
+                    "arguments": json.dumps({"reason": reason}),
+                },
+            }],
+        }
+        logs, _ = _run_loop_mocked(
+            self.paths,
+            self.cfg,
+            [sleep_response, {"role": "assistant", "content": "после сна"}],
+        )
+
+        archives = list(self.folder.glob("mind-loop-*.json"))
+        self.assertEqual(len(archives), 1)
+        archived = json.loads(archives[0].read_text(encoding="utf-8"))
+        self.assertEqual(archived["session"], 1)
+        self.assertEqual(archived["sleep_reason"], reason)
+        self.assertEqual([item["n"] for item in archived["iterations"]], [1])
+        self.assertEqual(archived["iterations"][0]["user"], agent.USER_MESSAGE)
+        sleep_result = archived["iterations"][0]["tool_results"][0]
+        self.assertEqual(sleep_result["tool"], "sleep")
+        self.assertIn(reason, sleep_result["result"])
+
+        current = json.loads(self.paths.mind_loop.read_text(encoding="utf-8"))
+        self.assertEqual(current["session"], 2)
+        self.assertEqual([item["n"] for item in current["iterations"]], [1])
+        self.assertEqual(
+            current["iterations"][0]["assistant_message"]["content"],
+            "после сна",
+        )
+        self.assertEqual(len([entry for entry in logs if "😴 Сон" in entry]), 1)
 
 if __name__ == "__main__":
     unittest.main()

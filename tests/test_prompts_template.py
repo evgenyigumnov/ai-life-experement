@@ -39,7 +39,7 @@ class SystemPromptTemplateTests(unittest.TestCase):
         self.assertEqual(template.count("{session_iterations}"), 2)
         self.assertEqual(template.count("{sleep_warn_remaining}"), 1)
         self.assertLessEqual(len(template), 3400)
-        for marker in ("не ассистент", "единственное хранилище", "журналов", "незнакомые файлы", "рутинные проверки", "перезапиши память", "прочитай память", "run_bash", "get_messages", "send_message", "money_balance", "money_spend"):
+        for marker in ("не ассистент", "единственное хранилище", "журналов", "незнакомые файлы", "рутинные проверки", "перезапиши память", "прочитай память", "run_bash", "get_messages", "send_message", "money_balance", "money_spend", "sleep(reason)"):
             self.assertIn(marker, template)
 
     def test_template_describes_messaging_with_creator(self):
@@ -48,6 +48,12 @@ class SystemPromptTemplateTests(unittest.TestCase):
         self.assertIn("send_message", template)
         self.assertIn("get_messages", template)
         self.assertIn("единственный канал связи", template)
+
+    def test_template_describes_sleep_tool(self):
+        template = prompts.read_system_prompt_template()
+        self.assertIn("sleep(reason)", template)
+        self.assertIn("контекст стал слишком большим", template)
+        self.assertIn("Причина обязательна", template)
 
     def test_template_describes_money_tools_and_schedule(self):
         template = prompts.read_system_prompt_template()
