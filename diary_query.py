@@ -77,3 +77,57 @@ def recall_page(
     page = matched[:validated_limit]
     next_cursor = page[-1].get("id") if len(matched) > validated_limit and page else None
     return page, next_cursor
+
+
+def recall_page_by_ids(
+    data: dict,
+    ids,
+    tags=None,
+    kinds=None,
+    limit=DEFAULT_RECALL_LIMIT,
+    order="new",
+    after_id=None,
+    before_id=None,
+) -> tuple[list[dict], int | None]:
+    """Страница записей, отобранных поиском: совпадение по вхождению id.
+
+    Остальные фильтры, порядок и курсорная пагинация — как в recall_page,
+    чтобы выдача через новый поиск осталась совместимой со старым API.
+    """
+    wanted_ids = {
+        value
+        for value in ids
+        if isinstance(value, int) and not isinstance(value, bool)
+    }
+    wanted_tags = normalize_tags(tags)
+    wanted_kinds = normalize_kinds(kinds)
+    validated_limit = validate_limit(limit, DEFAULT_RECALL_LIMIT, MAX_RECALL_LIMIT)
+    if order not in RECALL_ORDERS:
+        raise ValidationError(f"'order' должен быть одним из: {', '.join(RECALL_ORDERS)}")
+    if after_id is not None:
+        after_id = validate_entry_id(after_id, name="'after_id'")
+    if before_id is not None:
+        before_id = validate_entry_id(before_id, name="'before_id'")
+
+    matched: list[dict] = []
+    for entry in data.get("entries") or []:
+        entry_id = entry.get("id")
+        if isinstance(entry_id, bool) or not isinstance(entry_id, int):
+            entry_id = None
+        if entry_id is None or entry_id not in wanted_ids:
+            continue
+        if after_id is not None and entry_id <= after_id:
+            continue
+        if before_id is not None and entry_id >= before_id:
+            continue
+        entry_tags = [str(tag).lower() for tag in entry.get("tags") or []]
+        if any(tag not in entry_tags for tag in wanted_tags):
+            continue
+        if wanted_kinds and entry.get("kind") not in wanted_kinds:
+            continue
+        matched.append(entry)
+
+    matched.sort(key=lambda entry: entry.get("id", 0), reverse=(order == "new"))
+    page = matched[:validated_limit]
+    next_cursor = page[-1].get("id") if len(matched) > validated_limit and page else None
+    return page, next_cursor

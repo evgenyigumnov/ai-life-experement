@@ -80,13 +80,39 @@ def index_entry(diary_path, entry, db_path=None) -> None:
         db.close()
 
 
+def remove_entry(diary_path, entry_id, db_path=None) -> None:
+    """Убрать запись из индекса (заготовка для будущих операций удаления)."""
+    db_path = Path(db_path) if db_path is not None else search_db_path(diary_path)
+    if not Path(db_path).exists():
+        return
+    db = _connect(db_path)
+    try:
+        with db:
+            db.execute("DELETE FROM entries_fts WHERE entry_id = ?", (entry_id,))
+    finally:
+        db.close()
+
+
+def count_entries(diary_path, db_path=None) -> int:
+    """Сколько записей сейчас в FTS-индексе (сверка свежести после апсертов)."""
+    db_path = Path(db_path) if db_path is not None else search_db_path(diary_path)
+    if not Path(db_path).exists():
+        return 0
+    db = _connect(db_path)
+    try:
+        return int(db.execute("SELECT COUNT(*) FROM entries_fts").fetchone()[0])
+    finally:
+        db.close()
+
+
 def _fts_query(query: str) -> str:
     """Собрать FTS5-запрос: термы через OR, кавычки удваиваются."""
     terms = []
     for raw in query.split():
         term = raw.replace('"', '""')
         if term:
-            terms.append(f'"{term}"')
+            # префиксный поиск: «вектор» находит «векторной», «векторный»
+            terms.append(f'"{term}"*')
     if not terms:
         raise ValidationError("запрос не содержит слов")
     return " OR ".join(terms)

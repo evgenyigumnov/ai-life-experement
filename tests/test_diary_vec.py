@@ -6,8 +6,23 @@ from pathlib import Path
 
 import pytest
 
-os.environ.setdefault("DIARY_EMBED_FAKE", "1")
-os.environ.setdefault("DIARY_VEC_SO", "/tmp/vec0.so")
+_SAVED_ENV = {}
+
+
+def setUpModule():
+    """Ставить env только на время модуля, не протекая в другие тесты."""
+    for key, value in (("DIARY_EMBED_FAKE", "1"), ("DIARY_VEC_SO", "/tmp/vec0.so")):
+        _SAVED_ENV[key] = os.environ.get(key)
+        if _SAVED_ENV[key] is None:
+            os.environ[key] = value
+
+
+def tearDownModule():
+    for key, saved in _SAVED_ENV.items():
+        if saved is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = saved
 
 from diary_recall_v2 import recall_v2  # noqa: E402
 from diary_vec import DiarySearchUnavailable, reindex_vec, search_vec  # noqa: E402

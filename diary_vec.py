@@ -149,3 +149,51 @@ def search_vec(diary_path, query, k=5, db_path=None) -> list[dict]:
     finally:
         db.close()
     return [{"id": row[0], "score": 1 - row[1], "distance": row[1]} for row in rows]
+
+
+def index_entry(diary_path, entry, db_path=None) -> None:
+    """Добавить или обновить запись в векторном индексе (remember/edit)."""
+    entry_id = entry.get("id")
+    if entry_id is None:
+        raise ValidationError("запись без id нельзя проиндексировать")
+    diary_path = Path(diary_path)
+    db_path = Path(db_path) if db_path is not None else vec_db_path(diary_path)
+    vector = embed_texts([str(entry.get("text", ""))])[0]
+    blob = struct.pack(f"<{len(vector)}f", *vector)
+    db = _connect(diary_path, db_path)
+    try:
+        with db:
+            db.execute("DELETE FROM entries_vec WHERE rowid = ?", (entry_id,))
+            db.execute(
+                "INSERT INTO entries_vec(rowid, embedding) VALUES (?, ?)",
+                (entry_id, blob),
+            )
+    finally:
+        db.close()
+
+
+def remove_entry(diary_path, entry_id, db_path=None) -> None:
+    """Убрать запись из векторного индекса (заготовка для удаления)."""
+    diary_path = Path(diary_path)
+    db_path = Path(db_path) if db_path is not None else vec_db_path(diary_path)
+    if not Path(db_path).exists():
+        return
+    db = _connect(diary_path, db_path)
+    try:
+        with db:
+            db.execute("DELETE FROM entries_vec WHERE rowid = ?", (entry_id,))
+    finally:
+        db.close()
+
+
+def count_entries(diary_path, db_path=None) -> int:
+    """Сколько записей сейчас в векторном индексе (сверка свежести)."""
+    diary_path = Path(diary_path)
+    db_path = Path(db_path) if db_path is not None else vec_db_path(diary_path)
+    if not Path(db_path).exists():
+        return 0
+    db = _connect(diary_path, db_path)
+    try:
+        return int(db.execute("SELECT COUNT(*) FROM entries_vec").fetchone()[0])
+    finally:
+        db.close()

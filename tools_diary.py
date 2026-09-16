@@ -6,6 +6,7 @@
 """
 
 import diary
+import diary_index
 from agent_text import _plural_entries
 from agent_paths import AgentPaths
 from diary_tags import count_tags, tags_stats, validate_min_count
@@ -42,14 +43,82 @@ def handle_diary_remember(args: dict, paths: AgentPaths) -> str:
     return f"Записано в дневник: id={entry['id']} ({'; '.join(details)})"
 
 
+def _recall_page_by_mode(
+    diary_path,
+    data: dict,
+    *,
+    query,
+    mode,
+    tags,
+    kinds,
+    limit,
+    order,
+    after_id,
+    before_id,
+):
+    """Страница recall: новый поиск (text/vector/hybrid) при query, иначе прежний.
+
+    Если поисковая машина недоступна, честно падаем на прежний подстрочный
+    поиск: diary_recall не должен ломаться из-за индекса.
+    """
+    if query is None:
+        return diary.recall_page(
+            data,
+            tags=tags,
+            kinds=kinds,
+            limit=limit,
+            order=order,
+            after_id=after_id,
+            before_id=before_id,
+        )
+    if not isinstance(query, str) or not query.strip():
+        raise diary.ValidationError("'query' должен быть непустой строкой")
+    chosen = mode or diary_index.DEFAULT_MODE
+    if chosen not in diary_index.MODES:
+        raise diary.ValidationError(
+            f"'mode' должен быть одним из: {', '.join(diary_index.MODES)}"
+        )
+    try:
+        ranked = diary_index.search_ranked(
+            diary_path, query, k=diary_index.candidate_k(limit), mode=chosen
+        )
+    except Exception:
+        return diary.recall_page(
+            data,
+            query=query,
+            tags=tags,
+            kinds=kinds,
+            limit=limit,
+            order=order,
+            after_id=after_id,
+            before_id=before_id,
+        )
+    return diary.recall_page_by_ids(
+        data,
+        [item["id"] for item in ranked],
+        tags=tags,
+        kinds=kinds,
+        limit=limit,
+        order=order,
+        after_id=after_id,
+        before_id=before_id,
+    )
+
+
 def handle_diary_recall(args: dict, paths: AgentPaths) -> str:
-    """diary_recall: найти записи дневника по фильтрам (с пагинацией)."""
+    """diary_recall: найти записи дневника по фильтрам (с пагинацией).
+
+    С query работает поиск по режиму (text/vector/hybrid, по умолчанию
+    hybrid) с автоиндексацией; без query — прежний список записей по id.
+    """
     try:
         data = diary.load_diary(paths.diary)
         order = args.get("order") or "new"
-        entries, next_cursor = diary.recall_page(
+        entries, next_cursor = _recall_page_by_mode(
+            paths.diary,
             data,
             query=args.get("query"),
+            mode=args.get("mode"),
             tags=args.get("tags"),
             kinds=args.get("kinds"),
             limit=(
