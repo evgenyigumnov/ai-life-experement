@@ -170,9 +170,10 @@ class ArgumentsAndSchemaTests(unittest.TestCase):
         )
         self.assertIn("timeout", function["parameters"]["properties"])
         self.assertEqual(function["parameters"]["required"], ["command"])
-        self.assertEqual(
-            function["parameters"]["properties"]["timeout"]["type"], "number"
-        )
+        timeout = function["parameters"]["properties"]["timeout"]
+        self.assertEqual(timeout["type"], "number")
+        self.assertEqual(timeout["minimum"], 1)
+        self.assertEqual(timeout["maximum"], tools_sandbox.MAX_BASH_TIMEOUT)
 
     def test_schema_descriptions_short_without_infra_details(self):
         """Описания схем короткие и без деталей инфраструктуры (шаг 4 плана)."""

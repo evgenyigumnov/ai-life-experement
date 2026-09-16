@@ -108,6 +108,9 @@ class TimeoutValidationTests(unittest.TestCase):
     def test_invalid_zero(self):
         self._invalid(0)
 
+    def test_invalid_fraction_below_minimum(self):
+        self._invalid(0.5)
+
     def test_invalid_negative(self):
         self._invalid(-5)
 

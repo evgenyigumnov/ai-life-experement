@@ -30,10 +30,12 @@ RUN_BASH_TOOL = {
                 },
                 "timeout": {
                     "type": "number",
+                    "minimum": 1,
+                    "maximum": MAX_BASH_TIMEOUT,
                     "description": (
                         "Необязательный таймаут в секундах "
                         f"(по умолчанию {DEFAULT_BASH_TIMEOUT}, "
-                        f"максимум {MAX_BASH_TIMEOUT})"
+                        f"допустимо 1-{MAX_BASH_TIMEOUT})"
                     ),
                 },
             },
@@ -94,7 +96,7 @@ def handle_run_bash(args: dict, paths: AgentPaths | None) -> str:
     if (
         not isinstance(timeout, (int, float))
         or isinstance(timeout, bool)
-        or timeout <= 0
+        or timeout < 1
         or timeout > MAX_BASH_TIMEOUT
     ):
         return (
