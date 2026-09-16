@@ -28,7 +28,7 @@
 | `test_wallet` | wallet.json: ledger credit/spend, баланс, оплаченные циклы, потребление без boost_consume, повреждение, атомарность и конкурентная запись |
 | `test_diary` / `test_diary_pagination` / `test_diary_edit` | diary.json: загрузка/бэкапы, remember/recall с фильтрами и курсорами, точечная правка и валидация |
 | `test_message_format` / `test_time_utils` | общие форматирование сообщений и ISO-время |
-| `test_llm` / `test_llm_support` | ретраи call_llm (429/сеть/5xx, backoff 2-4-8-16, пауза 60 и новый цикл), постоянные ошибки (400), пустой ответ, Ctrl+C во время паузы, usage без мутации SDK-сообщения (регрессия MockValSer), make_client |
+| `test_llm` / `test_llm_support` / `test_model_support` | ретраи call_llm (429/сеть/5xx, backoff 2-4-8-16, пауза 60 и новый цикл), постоянные ошибки (400), пустой ответ, Ctrl+C во время паузы, usage без мутации SDK-сообщения (регрессия MockValSer), make_client; профили GLM-5.3-Flash и DeepSeek-V4.1-Flash |
 | `test_llm_live` | живой smoke-тест: минимальный запрос на сервер из .env (load_config → make_client → call_llm → сериализация для истории → prompt_tokens); при недоступном сервере skip, `AI_LIVE_REQUIRED=1` — обязательность провалом |
 | `test_agent_build_messages` | `build_messages`: воспроизведение истории (текст, tool-calls по id и по порядку, итерации-ошибки, нормализация SDK-словарей, пробельные/пустые content, отсутствие урезания истории, перечитывание system-prompt.md) |
 | `test_agent_message_files` | тексты сообщений из файлов папки агента: переопределения user/last-iteration/wake-up, sleep-warning с `{remaining}`+`{memory_note}`, repeat-alert, перечитывание при каждой сборке, пустой файл → дефолт |

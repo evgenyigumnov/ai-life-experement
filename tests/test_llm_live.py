@@ -43,7 +43,8 @@ class LiveLlmSmokeTests(unittest.TestCase):
         with mock.patch.object(llm.time, "sleep", side_effect=_fail_fast_sleep):
             try:
                 return llm.call_llm(
-                    client, self.cfg.model, messages, tools=None, temperature=0.0
+                    client, self.cfg.model, messages, tools=None, temperature=0.0,
+                    reasoning_effort=self.cfg.reasoning_effort,
                 )
             except (openai.BadRequestError, _LiveUnavailable) as exc:
                 _skip_or_fail(exc)

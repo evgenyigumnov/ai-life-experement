@@ -13,6 +13,9 @@ from tests.helpers import PROJECT_ROOT
 
 sys.path.insert(0, str(PROJECT_ROOT))
 import llm  # noqa: E402
+from model_support import (  # noqa: E402
+    DEEPSEEK_V41_FLASH_MODEL, GLM_53_FLASH_MODEL,
+)
 
 
 def _msg(content="ок", tool_calls=None):
@@ -109,6 +112,21 @@ class CallLlmTests(unittest.TestCase):
                 self.assertEqual(client.calls[0]["reasoning_effort"], value)
         _, client, _ = self._run([_resp(_msg())])
         self.assertNotIn("reasoning_effort", client.calls[0])
+
+    def test_known_models_get_compatible_reasoning_values(self):
+        cases = (
+            (GLM_53_FLASH_MODEL, "xhigh", "max"),
+            (GLM_53_FLASH_MODEL, "none", "low"),
+            (DEEPSEEK_V41_FLASH_MODEL, "xhigh", "xhigh"),
+        )
+        for model, configured, expected in cases:
+            with self.subTest(model=model, configured=configured):
+                client = FakeClient([_resp(_msg())])
+                llm.call_llm(
+                    client, model, [{"role": "user", "content": "?"}],
+                    None, reasoning_effort=configured,
+                )
+                self.assertEqual(client.calls[0]["reasoning_effort"], expected)
 
     def test_retry_on_429(self):
         message, client, sleeps = self._run([_http_err(RateLimitError, 429), _resp(_msg())])

@@ -68,6 +68,18 @@
 `.venv/bin/python -m unittest tests.test_vision_live -v`; без доступного API
 или Docker тест пропускается, а `AI_LIVE_REQUIRED=1` делает его обязательным.
 
+### Поддерживаемые модели DeepInfra
+
+В `OPENAI_MODEL` можно выбрать любую из двух проверенных моделей:
+
+- `zai-org/GLM-5.3-Flash`;
+- `deepseek-ai/DeepSeek-V4.1-Flash`.
+
+Обе работают через `https://api.deepinfra.com/v1/openai`, поддерживают tools и
+нативное изображение для `inspect_image`. Для общего конфига используйте
+`REASONING_EFFORT=max`; старый `xhigh` также не ломает переключение на
+DeepSeek, а для GLM автоматически приводится к `max`.
+
 Кошелёк агента хранится отдельно в `wallet.json` и не входит в `mind-loop.json`:
 кредит создателя увеличивает доступный баланс, а `money_spend` уменьшает его и
 увеличивает запас выбранного эффекта — `speed` или `creativity`. Сумма трат не

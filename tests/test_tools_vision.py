@@ -103,9 +103,9 @@ class VisionToolTests(unittest.TestCase):
         self.assertEqual(model, self.context.model)
         self.assertEqual(messages[0]["role"], "user")
         content = messages[0]["content"]
-        self.assertEqual([part["type"] for part in content], ["image_url", "text"])
-        self.assertEqual(content[0]["image_url"]["url"], DATA_URL)
-        self.assertEqual(content[1]["text"], "Что здесь?")
+        self.assertEqual([part["type"] for part in content], ["text", "image_url"])
+        self.assertEqual(content[0]["text"], "Что здесь?")
+        self.assertEqual(content[1]["image_url"]["url"], DATA_URL)
         self.assertIsNone(call.call_args.kwargs["tools"])
         self.assertEqual(call.call_args.kwargs["temperature"], 0.83)
         self.assertEqual(call.call_args.kwargs["reasoning_effort"], "max")
