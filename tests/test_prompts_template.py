@@ -42,6 +42,13 @@ class SystemPromptTemplateTests(unittest.TestCase):
         for marker in ("не ассистент", "единственное хранилище", "журналов", "незнакомые файлы", "рутинные проверки", "перезапиши память", "прочитай память", "run_bash", "get_messages", "send_message", "money_balance", "money_spend", "sleep(reason)"):
             self.assertIn(marker, template)
 
+    def test_template_explains_diary_recall_modes(self):
+        template = prompts.read_system_prompt_template()
+        self.assertIn("mode=text — совпадения слов", template)
+        self.assertIn("mode=vector — похожий смысл и перефразировки", template)
+        self.assertIn("mode=hybrid — оба способа (обычный выбор)", template)
+        self.assertIn("Без query — последние записи", template)
+
     def test_template_describes_messaging_with_creator(self):
         template = prompts.read_system_prompt_template()
         self.assertIn("В начале итерации проверяй сообщения создателя", template)
